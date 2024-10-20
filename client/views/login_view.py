@@ -7,6 +7,7 @@ class LoginWindow(QWidget):
         self.controller = controller
         # Устанавливаем заголовок окна
         self.setWindowTitle("Login")
+        self.resize(600, 500)
         # Инициализируем пользовательский интерфейс
         self.init_ui()
 

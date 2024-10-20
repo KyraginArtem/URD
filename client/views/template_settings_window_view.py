@@ -1,13 +1,14 @@
 # client/views/template_settings_window_view.py
-from PySide6.QtWidgets import QWidget, QFormLayout, QSpinBox, QPushButton
+from PySide6.QtWidgets import QWidget, QFormLayout, QSpinBox, QPushButton, QLineEdit
 from PySide6.QtCore import Qt, Signal
 
 class TemplateSettingsWindow(QWidget):
     # Определяем сигнал для передачи новых значений строк и столбцов
-    settings_applied = Signal(int, int)
+    settings_applied = Signal(int, int, str)
 
-    def __init__(self):
+    def __init__(self, parent_view):
         super().__init__()
+        self.parent_view = parent_view
         self.setWindowTitle("Настройки шаблона")
         self.resize(600, 500)
         self.setWindowModality(Qt.ApplicationModal)  # Устанавливаем модальность окна
@@ -15,6 +16,10 @@ class TemplateSettingsWindow(QWidget):
 
     def init_ui(self):
         layout = QFormLayout()
+
+        # Поле для ввода названия шаблона
+        self.template_name_input = QLineEdit()
+        layout.addRow("Название шаблона", self.template_name_input)
 
         # Настройка количества строк
         self.row_spinbox = QSpinBox()
@@ -41,9 +46,14 @@ class TemplateSettingsWindow(QWidget):
         # Получение новых значений строк и столбцов
         rows = self.row_spinbox.value()
         cols = self.col_spinbox.value()
+        template_name = self.template_name_input.text().strip()
 
-        # Эмитируем сигнал с новыми значениями строк и столбцов
-        self.settings_applied.emit(rows, cols)
+        if not template_name:
+            print("Имя шаблона не может быть пустым.")
+            return
+
+        # Эмитируем сигнал с новыми значениями строк, столбцов и именем шаблона
+        self.settings_applied.emit(rows, cols, template_name)
 
         # Закрываем окно после применения настроек
         self.close()
