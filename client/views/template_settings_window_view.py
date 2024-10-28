@@ -8,6 +8,9 @@ class TemplateSettingsWindow(QWidget):
 
     def __init__(self, parent_view):
         super().__init__()
+        self.template_name_input = None
+        self.row_spinbox = None
+        self.col_spinbox = None
         self.parent_view = parent_view
         self.setWindowTitle("Настройки шаблона")
         self.resize(600, 500)
@@ -16,9 +19,8 @@ class TemplateSettingsWindow(QWidget):
 
     def init_ui(self):
         layout = QFormLayout()
-
-        # Поле для ввода названия шаблона
         self.template_name_input = QLineEdit()
+
         layout.addRow("Название шаблона", self.template_name_input)
 
         # Настройка количества строк
@@ -39,21 +41,14 @@ class TemplateSettingsWindow(QWidget):
         apply_button = QPushButton("Применить")
         apply_button.clicked.connect(self.apply_settings)
         layout.addWidget(apply_button)
-
         self.setLayout(layout)
 
     def apply_settings(self):
-        # Получение новых значений строк и столбцов
         rows = self.row_spinbox.value()
         cols = self.col_spinbox.value()
         template_name = self.template_name_input.text().strip()
-
         if not template_name:
             print("Имя шаблона не может быть пустым.")
             return
-
-        # Эмитируем сигнал с новыми значениями строк, столбцов и именем шаблона
         self.settings_applied.emit(rows, cols, template_name)
-
-        # Закрываем окно после применения настроек
         self.close()

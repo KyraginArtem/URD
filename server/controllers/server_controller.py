@@ -58,6 +58,20 @@ def handle_client(client_socket):
             else:
                 client_socket.send("Template does not exist".encode('utf-8'))
 
+        elif request.startswith("UPDATE_TEMPLATE"):
+            _, template_name, row_count, col_count, cell_data = request.split("|", 4)
+            # Сохраняем шаблон в базе данных
+            creation_date = datetime.datetime.now().strftime('%Y-%m-%d')
+            success = db_model.update_template(template_name, int(row_count),
+                                             int(col_count), cell_data, creation_date, background_color="white")
+            print(f"{success} ответ от БД в сервер контроллер")
+            # Отправляем ответ клиенту в зависимости от успеха операции
+            if success:
+                response = "Template update successfully"
+            else:
+                response = "Failed to update template"
+            client_socket.send(response.encode('utf-8'))
+
         elif request.startswith("DELETE_TEMPLATE"):
             _, template_name = request.split("|", 1)
             success = db_model.delete_template(template_name)

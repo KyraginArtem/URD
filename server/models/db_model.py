@@ -106,6 +106,49 @@ class DBModel:
         finally:
             cursor.close()
 
+    def update_template(self, template_name, row_count, col_count, cell_data, creation_date, background_color):
+        try:
+            cursor = self.connection.cursor()
+
+            # Обновляем данные о шаблоне в таблице Templates
+            cursor.execute("""
+                    UPDATE Templates
+                    SET creation_date = %s, row_count = %s, column_count = %s, background_color = %s
+                    WHERE name = %s
+                """, (creation_date, row_count, col_count, background_color, template_name))
+
+            # Зафиксировать изменения в таблице Templates
+            self.connection.commit()
+
+            # Удаляем все существующие данные ячеек для данного шаблона
+            cursor.execute("""
+                    DELETE FROM TemplateCells
+                    WHERE template_id = (SELECT template_id FROM Templates WHERE name = %s)
+                """, (template_name,))
+
+            # Сохраняем новые данные ячеек в таблице TemplateCells
+            for cell in cell_data.split('\n'):
+                if cell:
+                    cell_name, cell_value = cell.split(':')
+                    cursor.execute("""
+                            INSERT INTO TemplateCells (template_id, cell_name, data)
+                            VALUES ((SELECT template_id FROM Templates WHERE name = %s), %s, %s)
+                        """, (template_name, cell_name, cell_value))
+
+            # Зафиксировать изменения в таблице TemplateCells
+            self.connection.commit()
+
+            print("Шаблон успешно обновлен в базе данных.")
+            return True
+
+        except pymssql.Error as e:
+            print(f"Ошибка выполнения запроса: {e}")
+            self.connection.rollback()
+            return False  # Возвращаем False, если произошла ошибка
+
+        finally:
+            cursor.close()
+
     def save_template(self, template_name, row_count, col_count, cell_data, creation_date, background_color):
         try:
             cursor = self.connection.cursor()

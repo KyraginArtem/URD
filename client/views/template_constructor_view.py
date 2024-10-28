@@ -4,26 +4,28 @@ from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QComboBox, QPushButt
 from PySide6.QtCore import Qt, Signal
 
 class TemplateConstructorWindow(QWidget):
-    settings_requested = Signal()  # Сигнал для запроса открытия окна настроек
-    template_selected = Signal(str)  # Сигнал для выбора шаблона
-    template_saved = Signal(str, int, int, str)  # Сигнал для сохранения шаблона с именем и структурой
+    settings_requested = Signal()  # Открытия окна настроек
+    template_selected = Signal(str)  # Выбор шаблона
+    template_saved = Signal(str, int, int, str)  # Сохранение шаблона
+    delete_template_signal = Signal(str)
+    template_update = Signal(str, int, int, str)
 
     def __init__(self, admin_name, template_names, parent_view):
         super().__init__()
-        self.template_combo = None
+        self.setWindowTitle("Редактор шаблонов")
+        self.resize(1000, 700)
         self.admin_name = admin_name
         self.template_names = template_names
-        self.template_name = ""  # Имя текущего шаблона
-        self.settings_window = None  # Инициализация переменной
         self.parent_view = parent_view
-        self.setWindowTitle("Редактор шаблонов")
+
+        self.template_combo = None
+        self.template_name = ""
+        self.settings_window = None
+        self.template_name_label = None
+
         self.init_ui()
-
     def init_ui(self):
-        # Основной вертикальный макет
         main_layout = QVBoxLayout()
-
-        # Верхняя панель с выпадающим меню, кнопкой и именем администратора
         top_panel_layout = QHBoxLayout()
 
         # Выпадающее меню для выбора шаблона
@@ -56,7 +58,6 @@ class TemplateConstructorWindow(QWidget):
         self.table.setVerticalHeaderLabels([str(i + 1) for i in range(10)])
         main_layout.addWidget(self.table)
 
-        # Кнопка для сохранения настроек в БД
         save_button = QPushButton("Сохранить")
         save_button.clicked.connect(self.save_template)
         main_layout.addWidget(save_button)
@@ -68,14 +69,16 @@ class TemplateConstructorWindow(QWidget):
         # Устанавливаем основной макет
         self.setLayout(main_layout)
 
+    #Выбор имени в комбо-боксе
     def name_on_template_selected(self, template_name):
         self.template_name = template_name
         self.template_name_label.setText(f"Шаблон: {template_name}")
 
+
     def update_table_structure(self, row_count, col_count):
         self.table.setRowCount(row_count)
         self.table.setColumnCount(col_count)
-        column_labels = [self.generate_column_labels(i + 1) for i in range(col_count)]
+        column_labels = [self.generate_tabe_in_template(0, col) for col in range(col_count)]
         self.table.setHorizontalHeaderLabels(column_labels)
         self.table.setVerticalHeaderLabels([str(i + 1) for i in range(row_count)])
 
@@ -99,12 +102,6 @@ class TemplateConstructorWindow(QWidget):
             print("Имя шаблона не задано. Пожалуйста, введите имя в настройках шаблона.")
             return
 
-        # Проверка существования шаблона перед сохранением
-        if hasattr(self, 'parent_view') and hasattr(self.parent_view, 'controller'):
-            if self.parent_view.controller.check_template_exists(self.template_name):
-                QMessageBox.warning(self, "Ошибка сохранения",
-                            f"Шаблон с именем '{self.template_name}' уже существует. Пожалуйста, выберите другое имя.")
-                return
         rows = self.table.rowCount()
         cols = self.table.columnCount()
         cell_data = ""
@@ -112,26 +109,33 @@ class TemplateConstructorWindow(QWidget):
             for col in range(cols):
                 item = self.table.item(row, col)
                 cell_value = item.text() if item else ""
-                cell_name = f"{self.generate_cell_name(row, col)}"
+                cell_name = f"{self.generate_tabe_in_template(row, col)}"
                 cell_data += f"{cell_name}:{cell_value}\n"
 
-        # Отправляем сигнал на сохранение
+        if hasattr(self, 'parent_view') and hasattr(self.parent_view, 'controller'):
+            if self.parent_view.controller.check_template_exists_in_db(self.template_name):
+                confirm = QMessageBox.question(
+                    self, "Перезаписать шаблон?",
+                    f"Шаблон с именем '{self.template_name}' уже существует. Перезаписать данные шаблона?",
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if confirm == QMessageBox.Yes:
+                    self.template_update.emit(self.template_name, rows, cols, cell_data)
+                    return
+                else:
+                    return
         self.template_saved.emit(self.template_name, rows, cols, cell_data)
 
-    def generate_cell_name(self, row, col):
+    def generate_tabe_in_template(self, row, col):
         """Генерирует имя ячейки, подобное Excel, на основе номера строки и столбца."""
-        column_label = self.generate_column_labels(col + 1)  # 'A', 'B', ..., 'AA', ...
-        row_label = str(row + 1)
-        return f"{column_label}{row_label}"
-
-    def generate_column_labels(self, num_columns):
-        """Генерирует заголовки столбцов аналогично Excel (A, B, ..., Z, AA, AB, и так далее)."""
         labels = []
+        num_columns = col + 1
         while num_columns > 0:
             num_columns -= 1
             labels.append(chr(65 + (num_columns % 26)))
             num_columns //= 26
-        return ''.join(reversed(labels))
+
+        row_label = str(row + 1)
+        return f"{''.join(reversed(labels))}{row_label}"
 
     def add_template_name_to_combo(self, template_name):
         # Проверяем, что имя шаблона не пустое и не дублируется
@@ -154,12 +158,11 @@ class TemplateConstructorWindow(QWidget):
         # Проходим по всем строкам и столбцам таблицы
         for row in range(row_count):
             for col in range(col_count):
-                if index < len(data):  # Если у нас есть значения для вставки
+                if index < len(data):
                     value = data[index]
                     self.table.setItem(row, col, QTableWidgetItem(value))
                     index += 1
                 else:
-                    # Если значения закончились, оставляем ячейку пустой
                     self.table.setItem(row, col, QTableWidgetItem(''))
 
     def remove_template_name_from_combo(self, template_name):
@@ -174,31 +177,14 @@ class TemplateConstructorWindow(QWidget):
             self.template_combo.setCurrentIndex(index)
 
     def delete_template(self):
-        # Проверяем, выбран ли шаблон для удаления
         if not self.template_name:
             QMessageBox.warning(self, "Ошибка удаления", "Пожалуйста, выберите шаблон для удаления.")
             return
-
-        # Подтверждение удаления
         confirm = QMessageBox.question(
             self, "Подтверждение удаления", f"Вы уверены, что хотите удалить шаблон '{self.template_name}'?",
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No
         )
-
         if confirm == QMessageBox.Yes:
-            # Проверяем наличие parent_view и controller
-            if self.parent_view is None:
-                print("Ошибка: parent_view отсутствует.")
-                return
-
-            if not hasattr(self.parent_view, 'controller'):
-                print("Ошибка: controller отсутствует в parent_view.")
-                return
-
-            # Удаление шаблона
-            try:
-                self.parent_view.controller.delete_template(self.template_name)
-            except AttributeError as e:
-                print(f"Ошибка при вызове метода delete_template: {e}")
+            self.delete_template_signal.emit(self.template_name)
 
 
