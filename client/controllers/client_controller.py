@@ -76,9 +76,37 @@ class ClientController:
             if hasattr(self, 'template_constructor_view'):
                 self.template_constructor_view.update_table_structure(row_count, col_count)
                 self.template_constructor_view.update_background_color(background_color)
-                self.template_constructor_view.update_table_data(cell_data_line)
+
+                # Парсим данные шаблона и обновляем таблицу
+                parsed_data = self.parse_template_data(cell_data_line)
+                self.template_constructor_view.update_table_data(parsed_data)
         except ValueError as e:
             print(f"Error parsing template data: {e}")
+
+    def parse_template_data(self, data):
+        """Парсит данные шаблона и возвращает список ячеек с индексами и значениями."""
+        parsed_data = []
+        for item in data:
+            if ':' in item:
+                cell_name, cell_value = item.split(':', 1)
+                # Преобразуем имя ячейки в индексы строки и столбца
+                col_label = ''.join(filter(str.isalpha, cell_name))
+                row_label = ''.join(filter(str.isdigit, cell_name))
+                # Преобразуем буквенный заголовок столбца в индекс (например, A -> 0, B -> 1)
+                col_index = self.column_label_to_index(col_label)
+                row_index = int(row_label) - 1  # Преобразуем строковый номер в индекс (начиная с 0)
+                # Добавляем данные в список
+                parsed_data.append((row_index, col_index, cell_value))
+        return parsed_data
+
+    @staticmethod
+    def column_label_to_index(label):
+        """Преобразует буквенный заголовок столбца (например, 'A', 'B', 'AA') в индекс."""
+        label = label.upper()
+        index = 0
+        for i, char in enumerate(reversed(label)):
+            index += (ord(char) - ord('A') + 1) * (26 ** i)
+        return index - 1
 
     def refresh_template_combo_box_in_window(self, new_template_name):
         if hasattr(self, 'template_constructor_view') and self.template_constructor_view:

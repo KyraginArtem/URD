@@ -146,24 +146,15 @@ class TemplateConstructorWindow(QWidget):
         else:
             print(f"Шаблон '{template_name}' уже существует в комбо боксе или имя пустое.")
 
-    def update_table_data(self, data):
+    def update_table_data(self, parsed_data):
         """Обновляет данные таблицы на основе переданных данных."""
-        print(f"полученные данные в методе update_table_data: {data}")
+        # Очистка таблицы перед обновлением данных
+        self.table.clearContents()
 
-        # Индексы строки и столбца, с которых начнем заполнять таблицу
-        row_count = self.table.rowCount()
-        col_count = self.table.columnCount()
-        index = 0
-
-        # Проходим по всем строкам и столбцам таблицы
-        for row in range(row_count):
-            for col in range(col_count):
-                if index < len(data):
-                    value = data[index]
-                    self.table.setItem(row, col, QTableWidgetItem(value))
-                    index += 1
-                else:
-                    self.table.setItem(row, col, QTableWidgetItem(''))
+        # Обновляем данные в таблице на основе полученного списка
+        for row_index, col_index, value in parsed_data:
+            if 0 <= row_index < self.table.rowCount() and 0 <= col_index < self.table.columnCount():
+                self.table.setItem(row_index, col_index, QTableWidgetItem(value))
 
     def remove_template_name_from_combo(self, template_name):
         index = self.template_combo.findText(template_name)

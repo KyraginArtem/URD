@@ -7,12 +7,7 @@
     <list default="true" id="dea0fc47-1b46-438a-8fef-6a87b28abd10" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/controllers/client_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/controllers/client_controller.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/views/login_view.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/login_view.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/views/template_constructor_view.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/template_constructor_view.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/views/template_settings_window_view.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/template_settings_window_view.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main_client.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_client.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main_server.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_server.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/controllers/server_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/controllers/server_controller.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/models/db_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/models/db_model.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -99,11 +94,6 @@
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/client/views/template_constructor_view.py</url>
-          <line>115</line>
-          <option name="timeStamp" value="20" />
-        </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/server/controllers/server_controller.py</url>
           <line>61</line>
