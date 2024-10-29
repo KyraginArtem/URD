@@ -3,20 +3,23 @@ from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QComboBox, QPushButt
     QTableWidgetItem, QMessageBox
 from PySide6.QtCore import Qt, Signal
 
+from client.services.template_table_service import TemplateTableService
+
+
 class TemplateConstructorWindow(QWidget):
     settings_requested = Signal()  # Открытия окна настроек
     template_selected = Signal(str)  # Выбор шаблона
-    template_saved = Signal(str, int, int, str)  # Сохранение шаблона
+    template_save_requested = Signal()
     delete_template_signal = Signal(str)
     template_update = Signal(str, int, int, str)
 
-    def __init__(self, admin_name, template_names, parent_view):
+    def __init__(self, admin_name, template_names, controller):
         super().__init__()
         self.setWindowTitle("Редактор шаблонов")
         self.resize(1000, 700)
         self.admin_name = admin_name
         self.template_names = template_names
-        self.parent_view = parent_view
+        self.controller = controller
 
         self.template_combo = None
         self.template_name = ""
@@ -27,6 +30,7 @@ class TemplateConstructorWindow(QWidget):
     def init_ui(self):
         main_layout = QVBoxLayout()
         top_panel_layout = QHBoxLayout()
+        secondary_menu_layout = QHBoxLayout()
 
         # Выпадающее меню для выбора шаблона
         self.template_combo = QComboBox()
@@ -51,6 +55,19 @@ class TemplateConstructorWindow(QWidget):
 
         # Добавляем верхнюю панель в основной макет
         main_layout.addLayout(top_panel_layout)
+        main_layout.addLayout(secondary_menu_layout)
+
+        function1_button = QPushButton("Функция 1")
+        function1_button.clicked.connect(self.handle_function1)  # Связать с функцией обработки
+        secondary_menu_layout.addWidget(function1_button)
+
+        function2_button = QPushButton("Функция 2")
+        function2_button.clicked.connect(self.handle_function2)  # Связать с другой функцией
+        secondary_menu_layout.addWidget(function2_button)
+
+        function3_button = QPushButton("Функция 3")
+        function3_button.clicked.connect(self.handle_function3)  # Добавить больше кнопок по мере необходимости
+        secondary_menu_layout.addWidget(function3_button)
 
         # Таблица для отображения шаблона
         self.table = QTableWidget(4, 4)
@@ -59,7 +76,7 @@ class TemplateConstructorWindow(QWidget):
         main_layout.addWidget(self.table)
 
         save_button = QPushButton("Сохранить")
-        save_button.clicked.connect(self.save_template)
+        save_button.clicked.connect(self.template_save_requested.emit)
         main_layout.addWidget(save_button)
 
         delete_button = QPushButton("Удалить")
@@ -68,6 +85,15 @@ class TemplateConstructorWindow(QWidget):
 
         # Устанавливаем основной макет
         self.setLayout(main_layout)
+
+    def handle_function1(self):
+        print("Функция 1 выполнена")
+
+    def handle_function2(self):
+        print("Функция 2 выполнена")
+
+    def handle_function3(self):
+        print("Функция 3 выполнена")
 
     #Выбор имени в комбо-боксе
     def name_on_template_selected(self, template_name):
@@ -78,7 +104,7 @@ class TemplateConstructorWindow(QWidget):
     def update_table_structure(self, row_count, col_count):
         self.table.setRowCount(row_count)
         self.table.setColumnCount(col_count)
-        column_labels = [self.generate_tabe_in_template(0, col) for col in range(col_count)]
+        column_labels = [TemplateTableService.generate_cell_name(0, col) for col in range(col_count)]
         self.table.setHorizontalHeaderLabels(column_labels)
         self.table.setVerticalHeaderLabels([str(i + 1) for i in range(row_count)])
 
@@ -95,47 +121,6 @@ class TemplateConstructorWindow(QWidget):
         # Обновляем имя шаблона в метке
         self.template_name = template_name
         self.template_name_label.setText(f"Шаблон: {template_name}")
-
-    def save_template(self):
-        # Сохранение шаблона в базу данных
-        if not self.template_name:
-            print("Имя шаблона не задано. Пожалуйста, введите имя в настройках шаблона.")
-            return
-
-        rows = self.table.rowCount()
-        cols = self.table.columnCount()
-        cell_data = ""
-        for row in range(rows):
-            for col in range(cols):
-                item = self.table.item(row, col)
-                cell_value = item.text() if item else ""
-                cell_name = f"{self.generate_tabe_in_template(row, col)}"
-                cell_data += f"{cell_name}:{cell_value}\n"
-
-        if hasattr(self, 'parent_view') and hasattr(self.parent_view, 'controller'):
-            if self.parent_view.controller.check_template_exists_in_db(self.template_name):
-                confirm = QMessageBox.question(
-                    self, "Перезаписать шаблон?",
-                    f"Шаблон с именем '{self.template_name}' уже существует. Перезаписать данные шаблона?",
-                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                if confirm == QMessageBox.Yes:
-                    self.template_update.emit(self.template_name, rows, cols, cell_data)
-                    return
-                else:
-                    return
-        self.template_saved.emit(self.template_name, rows, cols, cell_data)
-
-    def generate_tabe_in_template(self, row, col):
-        """Генерирует имя ячейки, подобное Excel, на основе номера строки и столбца."""
-        labels = []
-        num_columns = col + 1
-        while num_columns > 0:
-            num_columns -= 1
-            labels.append(chr(65 + (num_columns % 26)))
-            num_columns //= 26
-
-        row_label = str(row + 1)
-        return f"{''.join(reversed(labels))}{row_label}"
 
     def add_template_name_to_combo(self, template_name):
         # Проверяем, что имя шаблона не пустое и не дублируется

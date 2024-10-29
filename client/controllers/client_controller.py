@@ -4,6 +4,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 from client.views.login_view import LoginWindow
 from client.views.template_constructor_view import TemplateConstructorWindow
 from client.views.template_settings_window_view import TemplateSettingsWindow
+from client.services.template_table_service import TemplateTableService
 
 class ClientController:
     settings_window = None
@@ -40,11 +41,10 @@ class ClientController:
     def open_template_constructor_window(self, username):
         template_names = self.get_template_names_in_db()  # Получение списка шаблонов из БД
         print(f"Шаблоны для конструктора: {template_names}")  # Отладка
-        self.template_constructor_view = (TemplateConstructorWindow(admin_name=username, template_names=template_names, parent_view=self))
+        self.template_constructor_view = (TemplateConstructorWindow(admin_name=username, template_names=template_names, controller=self))
         self.template_constructor_view.template_selected.connect(self.request_template_data_in_db)
         self.template_constructor_view.settings_requested.connect(self.open_settings_window)
-        self.template_constructor_view.template_saved.connect(
-            self.save_template_in_db)  # Подключаем сохранение к методу контроллера
+        self.template_constructor_view.template_save_requested.connect(self.handle_save_template)
         self.template_constructor_view.template_update.connect(self.update_template_data_in_db)
         self.template_constructor_view.delete_template_signal.connect(self.delete_template_in_db)
         self.template_constructor_view.show()
@@ -78,35 +78,30 @@ class ClientController:
                 self.template_constructor_view.update_background_color(background_color)
 
                 # Парсим данные шаблона и обновляем таблицу
-                parsed_data = self.parse_template_data(cell_data_line)
+                parsed_data = TemplateTableService.parse_table_data(cell_data_line)
                 self.template_constructor_view.update_table_data(parsed_data)
         except ValueError as e:
             print(f"Error parsing template data: {e}")
 
-    def parse_template_data(self, data):
-        """Парсит данные шаблона и возвращает список ячеек с индексами и значениями."""
-        parsed_data = []
-        for item in data:
-            if ':' in item:
-                cell_name, cell_value = item.split(':', 1)
-                # Преобразуем имя ячейки в индексы строки и столбца
-                col_label = ''.join(filter(str.isalpha, cell_name))
-                row_label = ''.join(filter(str.isdigit, cell_name))
-                # Преобразуем буквенный заголовок столбца в индекс (например, A -> 0, B -> 1)
-                col_index = self.column_label_to_index(col_label)
-                row_index = int(row_label) - 1  # Преобразуем строковый номер в индекс (начиная с 0)
-                # Добавляем данные в список
-                parsed_data.append((row_index, col_index, cell_value))
-        return parsed_data
-
-    @staticmethod
-    def column_label_to_index(label):
-        """Преобразует буквенный заголовок столбца (например, 'A', 'B', 'AA') в индекс."""
-        label = label.upper()
-        index = 0
-        for i, char in enumerate(reversed(label)):
-            index += (ord(char) - ord('A') + 1) * (26 ** i)
-        return index - 1
+    def handle_save_template(self):
+        """Обрабатывает запрос на сохранение шаблона из представления."""
+        if not self.template_constructor_view.template_name:
+            self.show_message_box("Ошибка", "Имя шаблона не задано. Пожалуйста, введите имя в настройках шаблона.")
+            return
+        rows = self.template_constructor_view.table.rowCount()
+        cols = self.template_constructor_view.table.columnCount()
+        cell_data = TemplateTableService.collect_table_data(self.template_constructor_view.table)
+        if self.check_template_exists_in_db(self.template_constructor_view.template_name):
+            confirm = QMessageBox.question(
+                self.template_constructor_view,
+                "Перезаписать шаблон?",
+                f"Шаблон с именем '{self.template_constructor_view.template_name}' уже существует. Перезаписать данные шаблона?",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+            )
+            if confirm == QMessageBox.Yes:
+                self.update_template_data_in_db(self.template_constructor_view.template_name, rows, cols, cell_data)
+        else:
+            self.save_template_in_db(self.template_constructor_view.template_name, rows, cols, cell_data)
 
     def refresh_template_combo_box_in_window(self, new_template_name):
         if hasattr(self, 'template_constructor_view') and self.template_constructor_view:
