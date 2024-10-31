@@ -193,7 +193,6 @@ class TemplateConstructorWindow(QWidget):
         if confirm == QMessageBox.Yes:
             self.delete_template_signal.emit(self.template_name)
 
-# _____________________________________________________
     def handle_merge_cells(self):
         selected_ranges = self.table.selectedRanges()
         if len(selected_ranges) == 1:
@@ -203,20 +202,13 @@ class TemplateConstructorWindow(QWidget):
             left_col = merge_range.leftColumn()
             right_col = merge_range.rightColumn()
 
-            self.controller.handle_merge_cells_request(top_row, bottom_row, left_col, right_col)
-
-    def is_merged(self, top_row, bottom_row, left_col, right_col):
-        """Проверяет, является ли заданный диапазон объединенным."""
-        item = self.table.item(top_row, left_col)
-        if item:
-            cell_data = item.data(Qt.UserRole)
-            if cell_data:
-                try:
-                    cell_data_json = json.loads(cell_data)
-                    return cell_data_json.get("merged", {}).get("is_merged", False)
-                except json.JSONDecodeError:
-                    return False
-        return False
+            # Проверяем, является ли верхняя левая ячейка объединенной
+            if TemplateTableService.is_merged(self.table, top_row, left_col):
+                # Если ячейки объединены, отменяем объединение
+                self.controller.handle_unmerge_cells_request(top_row, bottom_row, left_col, right_col)
+            else:
+                # Если ячейки не объединены, выполняем объединение
+                self.controller.handle_merge_cells_request(top_row, bottom_row, left_col, right_col)
 
     def reset_table(self):
         """Сбрасывает таблицу к состоянию по умолчанию."""

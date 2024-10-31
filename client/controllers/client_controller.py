@@ -60,30 +60,7 @@ class ClientController:
         self.settings_window.show()
 
     def refresh_template_in_window(self, template_data):
-        try:
-            parts = template_data.split("|")
-            if len(parts) < 4:
-                raise ValueError("Invalid data format received from server.")
-
-            row_count = int(parts[0].strip())
-            col_count = int(parts[1].strip())
-            background_color = parts[2].strip()
-            cell_data = parts[3]
-            cell_data_line = cell_data.splitlines()
-            print(f"Данные из ячейки: {cell_data_line}")
-
-            # Обновляем данные таблицы и фон в представлении
-            if hasattr(self, 'template_constructor_view'):
-                # Сбрасываем таблицу перед загрузкой нового шаблона
-                self.template_constructor_view.reset_table()
-                self.template_constructor_view.update_table_structure(row_count, col_count)
-                self.template_constructor_view.update_background_color(background_color)
-
-                # Парсим данные шаблона и обновляем таблицу
-                parsed_data = TemplateTableService.parse_table_data(cell_data_line)
-                self.template_constructor_view.update_table_data(parsed_data)
-        except ValueError as e:
-            print(f"Error parsing template data: {e}")
+        TemplateTableService.refresh_table_view(self.template_constructor_view.table, template_data)
 
     def handle_save_template(self):
         """Обрабатывает запрос на сохранение шаблона из представления."""
@@ -93,6 +70,7 @@ class ClientController:
         rows = self.template_constructor_view.table.rowCount()
         cols = self.template_constructor_view.table.columnCount()
         cell_data = TemplateTableService.collect_table_data(self.template_constructor_view.table)
+
         if self.check_template_exists_in_db(self.template_constructor_view.template_name):
             confirm = QMessageBox.question(
                 self.template_constructor_view,
@@ -151,7 +129,7 @@ class ClientController:
         response = ClientController.send_request_to_server(request)
         if "Template update successfully" in response:
             (ClientController.show_message_box
-            (self, "Обновление шаблона", f"Шаблон '{template_name}' успешно обнавлен."))
+            (self, "Обновление шаблона", f"Шаблон '{template_name}' успешно обновлен."))
         else:
             print("Не удалось сохранить шаблон.")
 
@@ -181,16 +159,14 @@ class ClientController:
                 (ClientController.
                  show_message_box(self,"Ошибка удаления", "Не удалось удалить шаблон.", QMessageBox.Warning))
 
-    # ________________________________________
+    def handle_unmerge_cells_request(self, top_row, bottom_row, left_col, right_col):
+        """Обрабатывает запрос на отмену объединения ячеек."""
+        TemplateTableService.unmerge_cells(self.template_constructor_view.table, top_row, bottom_row, left_col, right_col)
+
     def handle_merge_cells_request(self, top_row, bottom_row, left_col, right_col):
-        # Проверяем, является ли диапазон объединенным
-        if self.template_constructor_view.is_merged(top_row, bottom_row, left_col, right_col):
-            # Если объединено, то отменяем объединение
-            TemplateTableService.unmerge_cells(self.template_constructor_view.table, top_row, bottom_row, left_col,
-                                               right_col)
-        else:
-            # Если не объединено, то выполняем объединение
-            main_value_item = self.template_constructor_view.table.item(top_row, left_col)
-            main_value_text = main_value_item.text() if main_value_item else ""
-            TemplateTableService.merge_cells(self.template_constructor_view.table, top_row, bottom_row, left_col,
-                                             right_col, main_value_text)
+        """Обрабатывает запрос на объединение ячеек."""
+        main_value = self.template_constructor_view.table.item(top_row, left_col).text() \
+        if self.template_constructor_view.table.item(top_row, left_col) \
+            else ""
+        TemplateTableService.merge_cells(self.template_constructor_view.table, top_row, bottom_row, left_col, right_col,
+                                         main_value)

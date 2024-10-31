@@ -173,3 +173,55 @@ class TemplateTableService(AbstractTableService):
                     new_item = QTableWidgetItem("")
                 new_item.setData(Qt.UserRole, json.dumps({"value": new_item.text()}))
                 table.setItem(row, col, new_item)
+
+    @staticmethod
+    def is_merged(table, top_row, left_col):
+        item = table.item(top_row, left_col)
+        if item:
+            cell_data = item.data(Qt.UserRole)
+            if cell_data:
+                try:
+                    cell_data_json = json.loads(cell_data)
+                    return cell_data_json.get("merged", {}).get("is_merged", False)
+                except json.JSONDecodeError:
+                    return False
+        return False
+
+    @staticmethod
+    def refresh_table_view(table, template_data):
+        """Обновляет таблицу с данными из шаблона"""
+        try:
+            parts = template_data.split("|")
+            if len(parts) < 4:
+                raise ValueError("Invalid data format received from server.")
+
+            row_count = int(parts[0].strip())
+            col_count = int(parts[1].strip())
+            background_color = parts[2].strip()
+            cell_data = parts[3]
+            cell_data_lines = cell_data.splitlines()
+
+            table.setRowCount(row_count)
+            table.setColumnCount(col_count)
+            column_labels = [TemplateTableService.generate_cell_name(0, col) for col in range(col_count)]
+            table.setHorizontalHeaderLabels(column_labels)
+            table.setVerticalHeaderLabels([str(i + 1) for i in range(row_count)])
+
+            # Обновляем фон таблицы
+            table.setStyleSheet(f"background-color: {background_color};")
+
+            # Парсим данные и обновляем таблицу
+            parsed_data = TemplateTableService.parse_table_data(cell_data_lines)
+            TemplateTableService.update_table_data(table, parsed_data)
+        except ValueError as e:
+            print(f"Error parsing template data: {e}")
+
+    @staticmethod
+    def update_table_data(table, parsed_data):
+        """Обновляет данные таблицы на основе переданных данных"""
+        table.clearContents()
+        for row_index, col_index, value, merged_info in parsed_data:
+            item = QTableWidgetItem(value)
+            if merged_info and merged_info.get("is_merged"):
+                item.setData(Qt.UserRole, json.dumps(merged_info))
+            table.setItem(row_index, col_index, item)
