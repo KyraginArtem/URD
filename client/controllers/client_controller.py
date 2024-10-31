@@ -47,7 +47,6 @@ class ClientController:
         self.template_constructor_view.template_save_requested.connect(self.handle_save_template)
         self.template_constructor_view.template_update.connect(self.update_template_data_in_db)
         self.template_constructor_view.delete_template_signal.connect(self.delete_template_in_db)
-        # self.template_constructor_view.merge_cells_requested.connect(self.handle_merge_cells)
         self.template_constructor_view.show()
 
     def open_settings_window(self):
@@ -184,20 +183,14 @@ class ClientController:
 
     # ________________________________________
     def handle_merge_cells_request(self, top_row, bottom_row, left_col, right_col):
-        main_value = self.template_constructor_view.table.item(top_row,
-                                                               left_col).text() if self.template_constructor_view.table.item(
-            top_row, left_col) else ""
-        TemplateTableService.merge_cells(self.template_constructor_view.table, top_row, bottom_row, left_col, right_col,
-                                         main_value)
-
-    def handle_merge_cells(self):
-        selected_ranges = self.table.selectedRanges()
-        if len(selected_ranges) == 1:
-            merge_range = selected_ranges[0]
-            top_row = merge_range.topRow()
-            bottom_row = merge_range.bottomRow()
-            left_col = merge_range.leftColumn()
-            right_col = merge_range.rightColumn()
-
-            # Отправляем команду контроллеру для обработки объединения ячеек
-            self.controller.handle_merge_cells_request(top_row, bottom_row, left_col, right_col)
+        # Проверяем, является ли диапазон объединенным
+        if self.template_constructor_view.is_merged(top_row, bottom_row, left_col, right_col):
+            # Если объединено, то отменяем объединение
+            TemplateTableService.unmerge_cells(self.template_constructor_view.table, top_row, bottom_row, left_col,
+                                               right_col)
+        else:
+            # Если не объединено, то выполняем объединение
+            main_value_item = self.template_constructor_view.table.item(top_row, left_col)
+            main_value_text = main_value_item.text() if main_value_item else ""
+            TemplateTableService.merge_cells(self.template_constructor_view.table, top_row, bottom_row, left_col,
+                                             right_col, main_value_text)

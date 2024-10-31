@@ -1,3 +1,4 @@
+# client/views/template_constructor_view.py
 import json
 import os
 from PySide6.QtGui import QIcon
@@ -14,7 +15,6 @@ class TemplateConstructorWindow(QWidget):
     template_save_requested = Signal()
     delete_template_signal = Signal(str)
     template_update = Signal(str, int, int, str)
-    # merge_cells_requested = Signal()
 
     def __init__(self, admin_name, template_names, controller):
         super().__init__()
@@ -112,9 +112,6 @@ class TemplateConstructorWindow(QWidget):
         else:
             print(f"Ошибка: не удалось открыть файл стилей по пути: {style_file_path}")
 
-    def handle_function1(self):
-        print("Функция 1 выполнена")
-
     def handle_function2(self):
         print("Функция 2 выполнена")
 
@@ -206,78 +203,20 @@ class TemplateConstructorWindow(QWidget):
             left_col = merge_range.leftColumn()
             right_col = merge_range.rightColumn()
 
-            # Отправляем команду контроллеру для обработки объединения ячеек
             self.controller.handle_merge_cells_request(top_row, bottom_row, left_col, right_col)
 
     def is_merged(self, top_row, bottom_row, left_col, right_col):
         """Проверяет, является ли заданный диапазон объединенным."""
-        for row in range(top_row, bottom_row + 1):
-            for col in range(left_col, right_col + 1):
-                item = self.table.item(row, col)
-                if item and "merged" in item.text():
-                    return True
+        item = self.table.item(top_row, left_col)
+        if item:
+            cell_data = item.data(Qt.UserRole)
+            if cell_data:
+                try:
+                    cell_data_json = json.loads(cell_data)
+                    return cell_data_json.get("merged", {}).get("is_merged", False)
+                except json.JSONDecodeError:
+                    return False
         return False
-
-    def unmerge_cells(self, top_row, bottom_row, left_col, right_col):
-        """Отменяет объединение ячеек в заданном диапазоне."""
-        main_value = self.table.item(top_row, left_col).text() if self.table.item(top_row, left_col) else ""
-
-        # Убираем информацию об объединении и оставляем значение только в первой ячейке
-        for row in range(top_row, bottom_row + 1):
-            for col in range(left_col, right_col + 1):
-                if row == top_row and col == left_col:
-                    self.table.setItem(row, col, QTableWidgetItem(main_value))
-                else:
-                    self.table.setItem(row, col, QTableWidgetItem(""))
-
-        # Убираем визуальное объединение
-        self.table.setSpan(top_row, left_col, 1, 1)
-
-    def update_table_view(self):
-        """Обновляет представление таблицы, чтобы отобразить текущие данные ячеек, включая объединения."""
-        rows = self.table.rowCount()
-        cols = self.table.columnCount()
-
-        for row in range(rows):
-            for col in range(cols):
-                item = self.table.item(row, col)
-                if item:
-                    try:
-                        cell_data = json.loads(item.text())
-                        value = cell_data.get("value", "")
-                        merged_info = cell_data.get("merged", {})
-
-                        # Если ячейка является основной для объединения, отображаем её значение
-                        if merged_info.get("is_merged"):
-                            merge_range = merged_info.get("merge_range")
-                            if merge_range:
-                                top_left, bottom_right = merge_range.split(':')
-                                top_row, left_col = TemplateTableService.parse_cell_name(top_left)
-                                bottom_row, right_col = TemplateTableService.parse_cell_name(bottom_right)
-
-                                # Объединяем ячейки в интерфейсе
-                                self.table.setSpan(top_row, left_col, bottom_row - top_row + 1,
-                                                   right_col - left_col + 1)
-
-                        # Устанавливаем значение ячейки
-                        self.table.setItem(row, col, QTableWidgetItem(value))
-
-                    except json.JSONDecodeError:
-                        # Если данные не являются JSON, просто устанавливаем значение
-                        self.table.setItem(row, col, QTableWidgetItem(item.text()))
-
-    def apply_cell_properties(self, row, col, cell_data):
-        """Применяет свойства ячейки на основе парсенных данных."""
-        value = cell_data.get("value", "")
-        merged = cell_data.get("merged", {}).get("is_merged", False)
-
-        # Устанавливаем значение ячейки
-        self.table.setItem(row, col, QTableWidgetItem(value))
-
-        # Применяем визуальные изменения для объединенных ячеек (если они есть)
-        if merged:
-            # Например, визуально выделяем, что эта ячейка объединена с другими
-            self.table.item(row, col).setBackground(Qt.lightGray)
 
     def reset_table(self):
         """Сбрасывает таблицу к состоянию по умолчанию."""

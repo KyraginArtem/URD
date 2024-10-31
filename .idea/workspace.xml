@@ -5,13 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="dea0fc47-1b46-438a-8fef-6a87b28abd10" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/client/icons/merge_cells.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/client/styles/styles.qss" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/controllers/client_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/controllers/client_controller.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/services/template_table_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/services/template_table_service.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/views/template_constructor_view.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/template_constructor_view.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/views/template_settings_window_view.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/template_settings_window_view.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -50,7 +47,7 @@
     "Python.db_connect.executor": "Run",
     "Python.db_model.executor": "Debug",
     "Python.main.executor": "Run",
-    "Python.main_client.executor": "Run",
+    "Python.main_client.executor": "Debug",
     "Python.main_server.executor": "Run",
     "Python.server_controller.executor": "Run",
     "Python.template_constructor_view.executor": "Run",
@@ -109,6 +106,11 @@
           <url>file://$PROJECT_DIR$/server/controllers/server_controller.py</url>
           <line>61</line>
           <option name="timeStamp" value="21" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/client/controllers/client_controller.py</url>
+          <line>89</line>
+          <option name="timeStamp" value="26" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

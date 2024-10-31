@@ -13,7 +13,7 @@ class TemplateTableService(AbstractTableService):
         merge_range = f"{TemplateTableService.generate_cell_name(top_row, left_col)}:" \
                       f"{TemplateTableService.generate_cell_name(bottom_row, right_col)}"
 
-        # Объединение ячеек визуально с помощью метода mergeCells()
+        # Объединение ячеек визуально с помощью метода setSpan()
         table.setSpan(top_row, left_col, (bottom_row - top_row + 1), (right_col - left_col + 1))
 
         # Устанавливаем основное значение и добавляем атрибут объединения для ячейки
@@ -23,8 +23,7 @@ class TemplateTableService(AbstractTableService):
         item.setTextAlignment(Qt.AlignCenter)  # Центрируем текст в объединенной ячейке
         table.setItem(top_row, left_col, item)
 
-        # Применяем обновления к каждой ячейке в объединенном диапазоне
-        # Остальные ячейки становятся частью объединения и очищаются
+        # Очищаем остальные ячейки в диапазоне
         for row in range(top_row, bottom_row + 1):
             for col in range(left_col, right_col + 1):
                 if not (row == top_row and col == left_col):
@@ -127,38 +126,50 @@ class TemplateTableService(AbstractTableService):
             for col in range(cols):
                 item = table_widget.item(row, col)
                 if item:
-                    # Получаем полные данные из пользовательских данных
-                    cell_value = item.data(Qt.UserRole) if item.data(Qt.UserRole) else ""
+                    # Попытка получить полные данные из пользовательских данных
+                    cell_data_str = item.data(Qt.UserRole)
+                    if cell_data_str:
+                        try:
+                            cell_data_json = json.loads(cell_data_str)
+                            cell_value = cell_data_json.get("value", "")
+                        except json.JSONDecodeError:
+                            cell_value = item.text()  # Если не удалось, берем обычный текст
+                    else:
+                        cell_value = item.text() if item else ""
+
                     cell_name = TemplateTableService.generate_cell_name(row, col)
                     cell_data += f"{cell_name}:{cell_value}\n"
 
         return cell_data
 
     @staticmethod
-    def parse_cell_data(cell_data_str):
-        """Парсит строку данных ячейки и возвращает объект с информацией о значении и свойствах."""
-        try:
-            cell_data = eval(cell_data_str)  # Преобразуем строку в словарь
-            return cell_data
-        except (SyntaxError, NameError) as e:
-            print(f"Ошибка парсинга данных ячейки: {e}")
-            return {
-                "value": cell_data_str,
-                "merged": {
-                    "is_merged": False,
-                    "merge_range": None
-                }
-            }
+    def unmerge_cells(table, top_row, bottom_row, left_col, right_col):
+        # Считываем текущее значение основной ячейки (левой верхней)
+        main_item = table.item(top_row, left_col)
+        if main_item:
+            cell_data_str = main_item.data(Qt.UserRole)
+            if cell_data_str:
+                try:
+                    cell_data = json.loads(cell_data_str)
+                    main_value = cell_data.get("value", "")
+                except json.JSONDecodeError:
+                    main_value = ""
+            else:
+                main_value = ""
+        else:
+            main_value = ""
 
-    @staticmethod
-    def parse_merge_range(merge_range):
-        """Парсит строку merge_range в координаты ячеек."""
-        try:
-            top_left, bottom_right = merge_range.split(":")
-            top_row = int(''.join(filter(str.isdigit, top_left))) - 1
-            left_col = TemplateTableService.column_label_to_index(''.join(filter(str.isalpha, top_left)))
-            bottom_row = int(''.join(filter(str.isdigit, bottom_right))) - 1
-            right_col = TemplateTableService.column_label_to_index(''.join(filter(str.isalpha, bottom_right)))
-            return top_row, left_col, bottom_row, right_col
-        except ValueError:
-            return None, None, None, None
+        # Отменяем объединение ячеек
+        table.setSpan(top_row, left_col, 1, 1)
+
+        # Восстанавливаем каждую ячейку в диапазоне
+        for row in range(top_row, bottom_row + 1):
+            for col in range(left_col, right_col + 1):
+                if row == top_row and col == left_col:
+                    # Левой верхней ячейке присваиваем основное значение
+                    new_item = QTableWidgetItem(main_value)
+                else:
+                    # Остальные ячейки делаем пустыми
+                    new_item = QTableWidgetItem("")
+                new_item.setData(Qt.UserRole, json.dumps({"value": new_item.text()}))
+                table.setItem(row, col, new_item)
