@@ -1,0 +1,18 @@
+/* styles.qss */
+QPushButton#merge_button {
+    background-color: #e6e6e6;
+    border: 1px solid #000;
+    border-radius: 3px;
+    padding: 5px;
+    width:24px;
+    height: 24px;
+}
+
+QPushButton:hover {
+    background-color: #d4d4d4;
+}
+
+QPushButton:pressed {
+    background-color: #c8c8c8;
+    border-style: inset;
+}

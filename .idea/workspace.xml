@@ -5,11 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="dea0fc47-1b46-438a-8fef-6a87b28abd10" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/client/services/abstract_table_service.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/client/services/template_table_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/client/icons/merge_cells.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/client/styles/styles.qss" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/controllers/client_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/controllers/client_controller.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/services/template_table_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/services/template_table_service.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/views/template_constructor_view.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/template_constructor_view.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/views/template_settings_window_view.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/template_settings_window_view.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,6 +27,9 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/client/styles/styles.qss" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
@@ -51,11 +56,13 @@
     "Python.template_constructor_view.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "main",
-    "last_opened_file_path": "C:/Users/kyrag/PycharmProjects/URD/client"
+    "last_opened_file_path": "C:/Users/kyrag/PycharmProjects/URD/client/icons",
+    "settings.editor.selected.configurable": "preferences.fileTypes"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\kyrag\PycharmProjects\URD\client\icons" />
       <recent name="C:\Users\kyrag\PycharmProjects\URD\client" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
@@ -80,6 +87,9 @@
       <updated>1728653324696</updated>
     </task>
     <servers />
+  </component>
+  <component name="UnknownFeatures">
+    <option featureType="com.intellij.fileTypeFactory" implementationName="*.qss" />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
     <option name="TAB_STATES">

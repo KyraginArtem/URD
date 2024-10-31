@@ -47,6 +47,7 @@ class ClientController:
         self.template_constructor_view.template_save_requested.connect(self.handle_save_template)
         self.template_constructor_view.template_update.connect(self.update_template_data_in_db)
         self.template_constructor_view.delete_template_signal.connect(self.delete_template_in_db)
+        # self.template_constructor_view.merge_cells_requested.connect(self.handle_merge_cells)
         self.template_constructor_view.show()
 
     def open_settings_window(self):
@@ -74,6 +75,8 @@ class ClientController:
 
             # Обновляем данные таблицы и фон в представлении
             if hasattr(self, 'template_constructor_view'):
+                # Сбрасываем таблицу перед загрузкой нового шаблона
+                self.template_constructor_view.reset_table()
                 self.template_constructor_view.update_table_structure(row_count, col_count)
                 self.template_constructor_view.update_background_color(background_color)
 
@@ -178,3 +181,23 @@ class ClientController:
             else:
                 (ClientController.
                  show_message_box(self,"Ошибка удаления", "Не удалось удалить шаблон.", QMessageBox.Warning))
+
+    # ________________________________________
+    def handle_merge_cells_request(self, top_row, bottom_row, left_col, right_col):
+        main_value = self.template_constructor_view.table.item(top_row,
+                                                               left_col).text() if self.template_constructor_view.table.item(
+            top_row, left_col) else ""
+        TemplateTableService.merge_cells(self.template_constructor_view.table, top_row, bottom_row, left_col, right_col,
+                                         main_value)
+
+    def handle_merge_cells(self):
+        selected_ranges = self.table.selectedRanges()
+        if len(selected_ranges) == 1:
+            merge_range = selected_ranges[0]
+            top_row = merge_range.topRow()
+            bottom_row = merge_range.bottomRow()
+            left_col = merge_range.leftColumn()
+            right_col = merge_range.rightColumn()
+
+            # Отправляем команду контроллеру для обработки объединения ячеек
+            self.controller.handle_merge_cells_request(top_row, bottom_row, left_col, right_col)

@@ -1,7 +1,9 @@
-# client/views/template_constructor_view.py
+import json
+import os
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QComboBox, QPushButton, QTableWidget, QHBoxLayout, \
     QTableWidgetItem, QMessageBox
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QFile, QSize
 
 from client.services.template_table_service import TemplateTableService
 
@@ -12,6 +14,7 @@ class TemplateConstructorWindow(QWidget):
     template_save_requested = Signal()
     delete_template_signal = Signal(str)
     template_update = Signal(str, int, int, str)
+    # merge_cells_requested = Signal()
 
     def __init__(self, admin_name, template_names, controller):
         super().__init__()
@@ -27,6 +30,8 @@ class TemplateConstructorWindow(QWidget):
         self.template_name_label = None
 
         self.init_ui()
+        self.load_styles()
+
     def init_ui(self):
         main_layout = QVBoxLayout()
         top_panel_layout = QHBoxLayout()
@@ -57,10 +62,19 @@ class TemplateConstructorWindow(QWidget):
         main_layout.addLayout(top_panel_layout)
         main_layout.addLayout(secondary_menu_layout)
 
-        function1_button = QPushButton("Функция 1")
-        function1_button.clicked.connect(self.handle_function1)  # Связать с функцией обработки
-        secondary_menu_layout.addWidget(function1_button)
+        # Определяем текущую директорию, в которой находится данный файл
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        icon_path = os.path.join(current_dir, "..", "icons", "merge_cells.png")
+        # Кнопка "Объединить" — стилизуем её как кнопку объединения ячеек
+        merge_button = QPushButton()
+        merge_button.setIcon(QIcon(icon_path))
+        merge_button.setIconSize(QSize(24, 24))  # Устанавливаем размер иконки
+        merge_button.setFixedSize(24, 24)
+        merge_button.clicked.connect(self.handle_merge_cells)
+        secondary_menu_layout.addWidget(merge_button)
 
+
+        # Другие кнопки функций
         function2_button = QPushButton("Функция 2")
         function2_button.clicked.connect(self.handle_function2)  # Связать с другой функцией
         secondary_menu_layout.addWidget(function2_button)
@@ -86,6 +100,18 @@ class TemplateConstructorWindow(QWidget):
         # Устанавливаем основной макет
         self.setLayout(main_layout)
 
+    def load_styles(self):
+        """Загружает стили из файла .qss"""
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        style_file_path = os.path.join(current_dir, "..", "styles", "styles.qss")
+        file = QFile(style_file_path)
+        if file.open(QFile.ReadOnly | QFile.Text):
+            stylesheet = file.readAll().data().decode()
+            self.setStyleSheet(stylesheet)
+            print("Стили успешно загружены")
+        else:
+            print(f"Ошибка: не удалось открыть файл стилей по пути: {style_file_path}")
+
     def handle_function1(self):
         print("Функция 1 выполнена")
 
@@ -95,11 +121,10 @@ class TemplateConstructorWindow(QWidget):
     def handle_function3(self):
         print("Функция 3 выполнена")
 
-    #Выбор имени в комбо-боксе
+    # Выбор имени в комбо-боксе
     def name_on_template_selected(self, template_name):
         self.template_name = template_name
         self.template_name_label.setText(f"Шаблон: {template_name}")
-
 
     def update_table_structure(self, row_count, col_count):
         self.table.setRowCount(row_count)
@@ -124,8 +149,7 @@ class TemplateConstructorWindow(QWidget):
 
     def add_template_name_to_combo(self, template_name):
         # Проверяем, что имя шаблона не пустое и не дублируется
-        if template_name and template_name not in [self.template_combo.itemText(i) for i in
-                                                   range(self.template_combo.count())]:
+        if template_name and template_name not in [self.template_combo.itemText(i) for i in range(self.template_combo.count())]:
             print(f"Добавляем шаблон '{template_name}' в комбо бокс.")
             self.template_combo.addItem(template_name)
         else:
@@ -137,9 +161,18 @@ class TemplateConstructorWindow(QWidget):
         self.table.clearContents()
 
         # Обновляем данные в таблице на основе полученного списка
-        for row_index, col_index, value in parsed_data:
+        for row_index, col_index, value, merged_info in parsed_data:
             if 0 <= row_index < self.table.rowCount() and 0 <= col_index < self.table.columnCount():
-                self.table.setItem(row_index, col_index, QTableWidgetItem(value))
+                item = QTableWidgetItem(value)
+
+                # Если ячейка объединена, добавляем соответствующую информацию
+                if merged_info.get("is_merged"):
+                    item.setData(Qt.UserRole, json.dumps({
+                        "value": value,
+                        "merged": merged_info
+                    }))
+
+                self.table.setItem(row_index, col_index, item)
 
     def remove_template_name_from_combo(self, template_name):
         index = self.template_combo.findText(template_name)
@@ -163,4 +196,101 @@ class TemplateConstructorWindow(QWidget):
         if confirm == QMessageBox.Yes:
             self.delete_template_signal.emit(self.template_name)
 
+# _____________________________________________________
+    def handle_merge_cells(self):
+        selected_ranges = self.table.selectedRanges()
+        if len(selected_ranges) == 1:
+            merge_range = selected_ranges[0]
+            top_row = merge_range.topRow()
+            bottom_row = merge_range.bottomRow()
+            left_col = merge_range.leftColumn()
+            right_col = merge_range.rightColumn()
 
+            # Отправляем команду контроллеру для обработки объединения ячеек
+            self.controller.handle_merge_cells_request(top_row, bottom_row, left_col, right_col)
+
+    def is_merged(self, top_row, bottom_row, left_col, right_col):
+        """Проверяет, является ли заданный диапазон объединенным."""
+        for row in range(top_row, bottom_row + 1):
+            for col in range(left_col, right_col + 1):
+                item = self.table.item(row, col)
+                if item and "merged" in item.text():
+                    return True
+        return False
+
+    def unmerge_cells(self, top_row, bottom_row, left_col, right_col):
+        """Отменяет объединение ячеек в заданном диапазоне."""
+        main_value = self.table.item(top_row, left_col).text() if self.table.item(top_row, left_col) else ""
+
+        # Убираем информацию об объединении и оставляем значение только в первой ячейке
+        for row in range(top_row, bottom_row + 1):
+            for col in range(left_col, right_col + 1):
+                if row == top_row and col == left_col:
+                    self.table.setItem(row, col, QTableWidgetItem(main_value))
+                else:
+                    self.table.setItem(row, col, QTableWidgetItem(""))
+
+        # Убираем визуальное объединение
+        self.table.setSpan(top_row, left_col, 1, 1)
+
+    def update_table_view(self):
+        """Обновляет представление таблицы, чтобы отобразить текущие данные ячеек, включая объединения."""
+        rows = self.table.rowCount()
+        cols = self.table.columnCount()
+
+        for row in range(rows):
+            for col in range(cols):
+                item = self.table.item(row, col)
+                if item:
+                    try:
+                        cell_data = json.loads(item.text())
+                        value = cell_data.get("value", "")
+                        merged_info = cell_data.get("merged", {})
+
+                        # Если ячейка является основной для объединения, отображаем её значение
+                        if merged_info.get("is_merged"):
+                            merge_range = merged_info.get("merge_range")
+                            if merge_range:
+                                top_left, bottom_right = merge_range.split(':')
+                                top_row, left_col = TemplateTableService.parse_cell_name(top_left)
+                                bottom_row, right_col = TemplateTableService.parse_cell_name(bottom_right)
+
+                                # Объединяем ячейки в интерфейсе
+                                self.table.setSpan(top_row, left_col, bottom_row - top_row + 1,
+                                                   right_col - left_col + 1)
+
+                        # Устанавливаем значение ячейки
+                        self.table.setItem(row, col, QTableWidgetItem(value))
+
+                    except json.JSONDecodeError:
+                        # Если данные не являются JSON, просто устанавливаем значение
+                        self.table.setItem(row, col, QTableWidgetItem(item.text()))
+
+    def apply_cell_properties(self, row, col, cell_data):
+        """Применяет свойства ячейки на основе парсенных данных."""
+        value = cell_data.get("value", "")
+        merged = cell_data.get("merged", {}).get("is_merged", False)
+
+        # Устанавливаем значение ячейки
+        self.table.setItem(row, col, QTableWidgetItem(value))
+
+        # Применяем визуальные изменения для объединенных ячеек (если они есть)
+        if merged:
+            # Например, визуально выделяем, что эта ячейка объединена с другими
+            self.table.item(row, col).setBackground(Qt.lightGray)
+
+    def reset_table(self):
+        """Сбрасывает таблицу к состоянию по умолчанию."""
+        # Удаляем все данные и объединения в таблице
+        self.table.clearContents()
+
+        # Устанавливаем размер таблицы в значение по умолчанию (например, 4x4)
+        self.table.setRowCount(4)
+        self.table.setColumnCount(4)
+        self.table.setHorizontalHeaderLabels([chr(65 + i) for i in range(4)])
+        self.table.setVerticalHeaderLabels([str(i + 1) for i in range(4)])
+
+        # Убираем все объединения ячеек
+        for row in range(self.table.rowCount()):
+            for col in range(self.table.columnCount()):
+                self.table.setSpan(row, col, 1, 1)
