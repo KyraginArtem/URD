@@ -5,10 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="dea0fc47-1b46-438a-8fef-6a87b28abd10" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/server/services/template_database_service.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/controllers/client_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/controllers/client_controller.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/services/template_table_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/services/template_table_service.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/views/template_constructor_view.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/template_constructor_view.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/controllers/server_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/controllers/server_controller.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/models/db_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/models/db_model.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -51,6 +54,7 @@
     "Python.main_server.executor": "Run",
     "Python.server_controller.executor": "Run",
     "Python.template_constructor_view.executor": "Run",
+    "Python.template_table_service.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "main",
     "last_opened_file_path": "C:/Users/kyrag/PycharmProjects/URD/client/icons",
@@ -103,9 +107,19 @@
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/server/controllers/server_controller.py</url>
-          <line>61</line>
-          <option name="timeStamp" value="21" />
+          <url>file://$PROJECT_DIR$/server/models/db_model.py</url>
+          <line>220</line>
+          <option name="timeStamp" value="34" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/client/services/template_table_service.py</url>
+          <line>34</line>
+          <option name="timeStamp" value="46" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/client/services/template_table_service.py</url>
+          <line>248</line>
+          <option name="timeStamp" value="53" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

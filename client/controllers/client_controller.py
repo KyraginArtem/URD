@@ -1,5 +1,8 @@
 # client/controllers/client_controller.py
+import json
 import socket
+import zlib
+
 from PySide6.QtWidgets import QApplication, QMessageBox
 from client.views.login_view import LoginWindow
 from client.views.template_constructor_view import TemplateConstructorWindow
@@ -31,11 +34,22 @@ class ClientController:
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect(('localhost', 5000))
-                s.sendall(request_data.encode('utf-8'))
-                response = s.recv(4096).decode('utf-8')
-                return response
-        except ConnectionRefusedError as e:
-            print(f"Error connecting to server: {e}")
+                json_request = json.dumps(request_data)
+                print(f"Отправляемый запрос: {json_request}")  # Логирование перед отправкой
+                compressed_data = zlib.compress(json.dumps(request_data).encode('utf-8'))
+                s.sendall(compressed_data)
+
+                compressed_response = s.recv(8192)  # Получаем сжатый ответ
+                response = zlib.decompress(compressed_response).decode('utf-8')
+                return json.loads(response)
+        except ConnectionResetError as e:
+            print(f"Connection error: {e}")
+            return None
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON response: {e}")
+            return None
+        except Exception as e:
+            print(f"Unexpected error: {e}")
             return None
 
     def open_template_constructor_window(self, username):
@@ -90,74 +104,127 @@ class ClientController:
             print("Ошибка: объект template_constructor_view не инициализирован.")
 
     def check_template_exists_in_db(self, template_name):
-        response = ClientController.send_request_to_server(f"CHECK_TEMPLATE_EXISTS {template_name}")
-        if "Template exists" in response:
+        request_data = {
+            "type": "CHECK_TEMPLATE_EXISTS",
+            "data": {"template_name": template_name}
+        }
+        response = ClientController.send_request_to_server(request_data)
+
+        if response.get("status") == "exists":
             return True
         else:
             return False
 
     def get_template_names_in_db(self):
-        response = ClientController.send_request_to_server("GET_TEMPLATE_NAMES")
-        if response:
-            template_names = response.split(',')
+        request_data = {
+            "type": "GET_TEMPLATE_NAMES",
+            "data": None
+        }
+        response = ClientController.send_request_to_server(request_data)
+        if response and response.get("status") == "success":
+            template_names = response.get("template_names", [])
             return template_names
         else:
             return []
 
     def get_user_name_in_db(self, username, password):
-        login_data = f"LOGIN {username} {password}"
-        response = ClientController.send_request_to_server(login_data)
-        if response:
-            if response.startswith('Login successful'):
-                print('Login successful')
-                _, role, admin_name = response.split('|')
-                if role == 'admin':
-                    self.login_pass_view.close()
-                    self.open_template_constructor_window(admin_name)
-                else:
-                    print('Access denied: User is not an admin')
+        request_data = {
+            "type": "LOGIN",
+            "data": {
+                "username": username,
+                "password": password
+            }
+        }
+        response = ClientController.send_request_to_server(request_data)
+        if response and response.get("status") == "success":
+            print('Login successful')
+            role = response.get("role")
+            admin_name = response.get("name")
+            if role == 'admin':
+                self.login_pass_view.close()
+                self.open_template_constructor_window(admin_name)
             else:
-                print('Invalid credentials')
+                print('Access denied: User is not an admin')
+        else:
+            print('Invalid credentials')
 
     def request_template_data_in_db(self, template_name):
-        response = ClientController.send_request_to_server(f"GET_TEMPLATE_DATA {template_name}")
+        request_data = {
+            "type": "GET_TEMPLATE_DATA",
+            "data": template_name
+        }
+        response = ClientController.send_request_to_server(request_data)
+
         if response:
-            self.refresh_template_in_window(response)
+            # Если response уже словарь, используйте его напрямую
+            if isinstance(response, dict):
+                template_data = response
+            else:
+                # На случай, если сервер вернет строку, делаем проверку
+                template_data = json.loads(response)
+
+            self.refresh_template_in_window(template_data)
 
     def update_template_data_in_db(self, template_name, row_count, col_count, cell_data):
-        request = f"UPDATE_TEMPLATE|{template_name}|{row_count}|{col_count}|{cell_data}"
-        response = ClientController.send_request_to_server(request)
-        if "Template update successfully" in response:
-            (ClientController.show_message_box
-            (self, "Обновление шаблона", f"Шаблон '{template_name}' успешно обновлен."))
+        request_data = {
+            "type": "UPDATE_TEMPLATE",
+            "data": {
+                "template_name": template_name,
+                "row_count": row_count,
+                "col_count": col_count,
+                "cell_data": cell_data
+            }
+        }
+        response = ClientController.send_request_to_server(request_data)
+
+        if response.get("status") == "success":
+            ClientController.show_message_box(self, "Обновление шаблона", f"Шаблон '{template_name}' успешно обновлен.")
         else:
-            print("Не удалось сохранить шаблон.")
+            print("Не удалось обновить шаблон.")
 
     def save_template_in_db(self, template_name, row_count, col_count, cell_data):
         # Сначала проверяем, существует ли уже шаблон с таким именем
         if self.check_template_exists_in_db(template_name):
-            ClientController.show_message_box(self,
-                "Ошибка", "Шаблон с именем '{template_name}' уже существует.", QMessageBox.Warning)
+            ClientController.show_message_box(
+                self, "Ошибка", f"Шаблон с именем '{template_name}' уже существует.", QMessageBox.Warning
+            )
             return
         else:
-            request = f"SAVE_TEMPLATE|{template_name}|{row_count}|{col_count}|{cell_data}"
-            response = ClientController.send_request_to_server(request)
-            if "Template saved successfully" in response:
+            request_data = {
+                "type": "SAVE_TEMPLATE",
+                "data": {
+                    "template_name": template_name,
+                    "row_count": row_count,
+                    "col_count": col_count,
+                    "cell_data": cell_data
+                }
+            }
+            response = ClientController.send_request_to_server(request_data)
+
+            if response.get("status") == "success":
                 self.refresh_template_combo_box_in_window(template_name)
                 self.template_constructor_view.set_current_template_in_combo(template_name)
             else:
                 print("Не удалось сохранить шаблон.")
 
     def delete_template_in_db(self, template_name):
+        # Сначала проверяем, существует ли уже шаблон с таким именем
         if self.check_template_exists_in_db(template_name):
-            response = ClientController.send_request_to_server(f"DELETE_TEMPLATE|{template_name}")
-            if "Delete successful" in response:
+            request_data = {
+                "type": "DELETE_TEMPLATE",
+                "data": template_name
+            }
+            response = ClientController.send_request_to_server(request_data)
+
+            if response.get("status") == "success":
                 self.template_constructor_view.remove_template_name_from_combo(template_name)
-                (ClientController.
-                 show_message_box(self,"Удаление шаблона", f"Шаблон '{template_name}' успешно удален."))
+                ClientController.show_message_box(
+                    self, "Удаление шаблона", f"Шаблон '{template_name}' успешно удален."
+                )
             else:
-                (ClientController.
-                 show_message_box(self,"Ошибка удаления", "Не удалось удалить шаблон.", QMessageBox.Warning))
+                ClientController.show_message_box(
+                    self, "Ошибка удаления", "Не удалось удалить шаблон.", QMessageBox.Warning
+                )
 
     def handle_unmerge_cells_request(self, top_row, bottom_row, left_col, right_col):
         """Обрабатывает запрос на отмену объединения ячеек."""

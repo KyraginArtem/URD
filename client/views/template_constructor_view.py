@@ -124,6 +124,13 @@ class TemplateConstructorWindow(QWidget):
         self.template_name_label.setText(f"Шаблон: {template_name}")
 
     def update_table_structure(self, row_count, col_count):
+        # Сброс объединений ячеек перед загрузкой нового шаблона
+        for row in range(self.table.rowCount()):
+            for col in range(self.table.columnCount()):
+                self.table.setSpan(row, col, 1, 1)  # Сбрасываем объединение для каждой ячейки
+
+        # Очищаем содержимое таблицы
+        self.table.clearContents()
         self.table.setRowCount(row_count)
         self.table.setColumnCount(col_count)
         column_labels = [TemplateTableService.generate_cell_name(0, col) for col in range(col_count)]
