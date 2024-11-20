@@ -88,20 +88,19 @@ def handle_client(client_socket):
                     response_data = {"status": "error", "message": "Template not found"}
                 send_response_to_client(client_socket, response_data)
 
-
             elif request_type == "SAVE_TEMPLATE":
                 print(f"Processing SAVE_TEMPLATE for: {data}")
                 template_name = data.get("template_name")
                 row_count = data.get("row_count")
                 col_count = data.get("col_count")
                 cell_data = data.get("cell_data")
+                background_color = data.get("background_color")
                 creation_date = datetime.datetime.now().strftime('%Y-%m-%d')
                 success = db_model.save_template(template_name, row_count, col_count, cell_data, creation_date,
-                                                 background_color="white")
+                                                 background_color)
                 response_data = {"status": "success"} if success else {"status": "failure"}
                 print(f"Sending response: {response_data}")  # Лог для отладки
                 send_response_to_client(client_socket, response_data)
-
 
             elif request_type == "CHECK_TEMPLATE_EXISTS":
                 template_name = data.get("template_name")
@@ -109,18 +108,17 @@ def handle_client(client_socket):
                 response_data = {"status": "exists"} if template_exists else {"status": "not_exists"}
                 send_response_to_client(client_socket, response_data)
 
-
             elif request_type == "UPDATE_TEMPLATE":
                 template_name = data.get("template_name")
                 row_count = data.get("row_count")
                 col_count = data.get("col_count")
                 cell_data = data.get("cell_data")
+                background_color = data.get("background_color")
                 creation_date = datetime.datetime.now().strftime('%Y-%m-%d')
                 success = db_model.update_template(template_name, row_count, col_count, cell_data, creation_date,
-                                                   background_color="white")
+                                                   background_color)
                 response_data = {"status": "success"} if success else {"status": "failure"}
                 send_response_to_client(client_socket, response_data)
-
 
             elif request_type == "DELETE_TEMPLATE":
                 template_name = data
@@ -136,15 +134,3 @@ def handle_client(client_socket):
     finally:
         client_socket.close()
 
-# Вспомогательная функция для форматирования данных шаблона
-def format_template_data(template_data):
-    # Преобразуем данные в строку, чтобы отправить их клиенту
-    formatted_data = ""
-    for row in template_data:
-        formatted_data += ",".join(str(value) for value in row.values()) + "\n"
-    return formatted_data
-
-def handle_load_template_request(self, client_socket, template_id):
-    template_data = self.database_service.load_template_cells(template_id)
-    response_data = json.dumps(template_data)
-    client_socket.sendall(response_data.encode('utf-8'))

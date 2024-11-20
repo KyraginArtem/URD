@@ -44,13 +44,15 @@ class DBModel:
         background_color = template_info['background_color']
         template_id = template_info['template_id']
 
-        # Получаем данные ячеек
+        # Получаем данные ячеек и их конфигурации
         cell_data = self._execute_query(
-            """SELECT TemplateCells.cell_name, TemplateCells.data, 
-                      TemplateCellConfigurations.type, TemplateCellConfigurations.length, 
-                      TemplateCellConfigurations.width, TemplateCellConfigurations.color, 
-                      TemplateCellConfigurations.font, TemplateCellConfigurations.format, 
-                      TemplateCellConfigurations.is_merged, TemplateCellConfigurations.merge_range
+            """SELECT TemplateCells.cell_name, TemplateCells.data,
+                      TemplateCellConfigurations.background_color, TemplateCellConfigurations.height,
+                      TemplateCellConfigurations.width, TemplateCellConfigurations.text_color,
+                      TemplateCellConfigurations.font, TemplateCellConfigurations.format,
+                      TemplateCellConfigurations.text_tilt, TemplateCellConfigurations.underline,
+                      TemplateCellConfigurations.text_size, TemplateCellConfigurations.merger,
+                      TemplateCellConfigurations.bold
                FROM TemplateCells
                LEFT JOIN TemplateCellConfigurations ON TemplateCells.cell_id = TemplateCellConfigurations.cell_id
                WHERE template_id = %s
@@ -64,16 +66,17 @@ class DBModel:
             cell_name = row["cell_name"]
             value = row["data"]
             config = {
-                "type": row.get("type"),
-                "length": row.get("length"),
+                "background_color": row.get("background_color"),
+                "height": row.get("height"),
                 "width": row.get("width"),
-                "color": row.get("color"),
+                "text_color": row.get("text_color"),
                 "font": row.get("font"),
                 "format": row.get("format"),
-                "merged": {
-                    "is_merged": row.get("is_merged", False),
-                    "merge_range": row.get("merge_range")
-                }
+                "text_tilt": row.get("text_tilt"),
+                "underline": row.get("underline"),
+                "text_size": row.get("text_size"),
+                "merger": row.get("merger"),
+                "bold": row.get("bold")
             }
             cells.append({
                 "cell_name": cell_name,
@@ -214,80 +217,38 @@ class DBModel:
             cursor.close()
 
     def _save_template_cells(self, cursor, template_id, cell_data):
-        """
-        Сохраняет данные ячеек в базу данных. Ожидает, что cell_data - это JSON-строка с конфигурациями ячеек.
-        """
         try:
-            cells = json.loads(cell_data)  # Разбор JSON-строки
+            cells = json.loads(cell_data)
             for cell in cells:
-                cell_name = cell.get("cell_name")
-                cell_value = cell.get("value")
+                cell_name = cell['cell_name']
+                value = cell['value']
+                config = cell['config']
 
+                # Сохраняем данные ячейки в таблице TemplateCells
                 cursor.execute("""
-                    INSERT INTO TemplateCells (template_id, cell_name, data)
-                    VALUES (%s, %s, %s)
-                """, (template_id, cell_name, cell_value))
+                            INSERT INTO TemplateCells (template_id, cell_name, data)
+                            VALUES (%s, %s, %s)
+                        """, (template_id, cell_name, value))
 
-                # Получение ID сохраненной ячейки
-                cell_id = cursor.lastrowid
+                # Получаем cell_id для связи с таблицей конфигураций
+                cursor.execute("SELECT cell_id FROM TemplateCells WHERE template_id = %s AND cell_name = %s",
+                               (template_id, cell_name))
+                cell_id = cursor.fetchone()['cell_id']
 
-                # Сохранение конфигурации ячейки
-                config = cell.get("config")
-                if config:
-                    self.save_cell_configuration(template_id, cell_id, json.dumps(config))
+                # Сохраняем конфигурацию ячейки в таблице TemplateCellConfigurations
+                cursor.execute("""
+                    INSERT INTO TemplateCellConfigurations (cell_id, background_color, height, width,
+                    text_color, font, format, text_tilt, underline, text_size, cell_name, merger, bold)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (cell_id, config.get('background_color'), config.get('height'), config.get('width'),
+                      config.get('text_color'), config.get('font'), config.get('format'),
+                      config.get('text_tilt'), config.get('underline'), config.get('text_size'), cell_name,
+                      config.get('merger'), config.get('bold')))
 
             self.connection.commit()
             print("Все ячейки и их конфигурации успешно сохранены.")
         except pymssql.Error as e:
             print(f"Ошибка сохранения ячеек: {e}")
             self.connection.rollback()
-        finally:
-            cursor.close()
-
-    def save_cell_configuration(self, template_id, cell_id, config):
-        """
-        Сохраняет конфигурацию ячейки в таблицу TemplateCellConfigurations.
-        :param template_id: ID шаблона.
-        :param cell_id: ID ячейки.
-        :param config: JSON-строка с конфигурацией ячейки.
-        """
-        try:
-            cursor = self.connection.cursor()
-            config_data = json.loads(config)  # Парсинг JSON-строки конфигурации
-
-            # Установка значений по умолчанию для отсутствующих полей
-            type_value = config_data.get("type", None)
-            length_value = config_data.get("length", None)
-            width_value = config_data.get("width", None)
-            color_value = config_data.get("color", None)
-            font_value = config_data.get("font", None)
-            format_value = config_data.get("format", None)
-            is_merged_value = config_data.get("is_merged", False)
-            merge_range_value = config_data.get("merge_range", None)
-
-            cursor.execute("""
-                INSERT INTO TemplateCellConfigurations (cell_id, type, length, width, color, font, format, is_merged, merge_range)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                cell_id,
-                type_value,
-                length_value,
-                width_value,
-                color_value,
-                font_value,
-                format_value,
-                is_merged_value,
-                merge_range_value
-            ))
-
-            self.connection.commit()
-            print(f"Конфигурация ячейки успешно сохранена.")
-            return True
-
-        except pymssql.Error as e:
-            print(f"Ошибка выполнения запроса: {e}")
-            self.connection.rollback()
-            return False
-
         finally:
             cursor.close()

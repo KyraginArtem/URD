@@ -1,3 +1,4 @@
+#URD\client\views\user_authorization_window.py
 from PySide6.QtWidgets import QWidget, QLineEdit, QPushButton, QVBoxLayout, QLabel
 
 class LoginWindow(QWidget):

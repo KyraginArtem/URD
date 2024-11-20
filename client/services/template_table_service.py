@@ -1,27 +1,23 @@
 # client/services/template_table_service.py
 import json
 
+from PySide6 import QtGui
 from PySide6.QtGui import Qt
 from PySide6.QtWidgets import QTableWidgetItem
+# from client.services.abstract_table_service import AbstractTableService
 
-from client.services.abstract_table_service import AbstractTableService
-
-class TemplateTableService(AbstractTableService):
+class TemplateTableService:
 
     @staticmethod
     def merge_cells(table, top_row, bottom_row, left_col, right_col, main_value):
         merge_range = f"{TemplateTableService.generate_cell_name(top_row, left_col)}:" \
                       f"{TemplateTableService.generate_cell_name(bottom_row, right_col)}"
-
-        # Объединение ячеек визуально с помощью метода setSpan()
         table.setSpan(top_row, left_col, (bottom_row - top_row + 1), (right_col - left_col + 1))
-
-        # Устанавливаем основное значение и добавляем атрибут объединения для ячейки
-        cell_data = TemplateTableService.create_cell_data(main_value, is_merged=True, merge_range=merge_range)
-        item = QTableWidgetItem(main_value)  # Отображаем только значение
-        item.setData(Qt.UserRole, cell_data)  # Сохраняем полные данные как пользовательские данные
-        item.setData(Qt.DisplayRole, main_value) # Сохраняем отображаемое значение для корректного отображения
-        item.setTextAlignment(Qt.AlignCenter)  # Центрируем текст в объединенной ячейке
+        cell_data = {
+            "merger": merge_range
+        }
+        item = QTableWidgetItem()
+        TemplateTableService.set_cell_data(item, main_value, cell_data)  # Используем функцию для установки данных
         table.setItem(top_row, left_col, item)
 
         # Очищаем остальные ячейки в диапазоне
@@ -29,70 +25,6 @@ class TemplateTableService(AbstractTableService):
             for col in range(left_col, right_col + 1):
                 if not (row == top_row and col == left_col):
                     table.setItem(row, col, None)  # Очистить ячейку, так как она теперь часть объединения
-
-    @staticmethod
-    def create_cell_data(value, is_merged=False, merge_range=None):
-        cell_data = {
-            "value": value,
-            "merged": {
-                "is_merged": is_merged,
-                "merge_range": merge_range
-            }
-        }
-        return json.dumps(cell_data)
-
-    def fill_cell(self, cell_name, color):
-        """Заполняет ячейку указанным цветом."""
-        # Реализация логики заливки цвета
-        return True
-
-    def set_font_color(self, cell_name, font_color):
-        """Задает цвет шрифта для конкретной ячейки."""
-        # Реализация изменения цвета текста в ячейке
-        return True
-
-    @staticmethod
-    def parse_table_data(data):
-        """Парсит данные шаблона и возвращает список ячеек с индексами и значениями."""
-        parsed_data = []
-        for item in data:
-            try:
-                # Попробуем загрузить строку как JSON
-                cell_data = json.loads(item)
-                value = cell_data.get("value", "")
-                merged_info = cell_data.get("merged", {})
-
-                # Извлечение имени ячейки
-                cell_name = cell_data.get("cell_name")
-                if cell_name:
-                    col_label = ''.join(filter(str.isalpha, cell_name))
-                    row_label = ''.join(filter(str.isdigit, cell_name))
-
-                    # Преобразуем буквенный заголовок столбца в индекс (например, A -> 0, B -> 1)
-                    col_index = TemplateTableService.column_label_to_index(col_label)
-                    row_index = int(row_label) - 1  # Преобразуем строковый номер в индекс (начиная с 0)
-
-                    # Добавляем данные в список, включая информацию об объединении
-                    parsed_data.append((row_index, col_index, value, merged_info))
-
-            except json.JSONDecodeError:
-                # Если строка не является JSON, парсим как обычную строку формата "A1:Значение"
-                if ':' in item:
-                    try:
-                        cell_name, value = item.split(':', 1)
-                        col_label = ''.join(filter(str.isalpha, cell_name))
-                        row_label = ''.join(filter(str.isdigit, cell_name))
-
-                        # Преобразуем буквенный заголовок столбца в индекс (например, A -> 0, B -> 1)
-                        col_index = TemplateTableService.column_label_to_index(col_label)
-                        row_index = int(row_label) - 1  # Преобразуем строковый номер в индекс (начиная с 0)
-
-                        # Добавляем данные в список без информации об объединении
-                        parsed_data.append((row_index, col_index, value, {}))
-                    except ValueError as e:
-                        print(f"Ошибка парсинга данных ячейки: {e}")
-
-        return parsed_data
 
     @staticmethod
     def column_label_to_index(label):
@@ -103,9 +35,9 @@ class TemplateTableService(AbstractTableService):
             index += (ord(char) - ord('A') + 1) * (26 ** i)
         return index - 1
 
+    #Генерация цифровых и буквенных имен ячеек в зависимости от кол-ва
     @staticmethod
     def generate_cell_name(row, col):
-        """Генерирует имя ячейки, подобное Excel, на основе номера строки и столбца."""
         labels = []
         num_columns = col + 1
         while num_columns > 0:
@@ -115,6 +47,16 @@ class TemplateTableService(AbstractTableService):
 
         row_label = str(row + 1)
         return f"{''.join(reversed(labels))}{row_label}"
+
+    @staticmethod
+    def generate_col_name(col):
+        labels = []
+        num_columns = col + 1
+        while num_columns > 0:
+            num_columns -= 1
+            labels.append(chr(65 + (num_columns % 26)))
+            num_columns //= 26
+        return f"{''.join(reversed(labels))}"
 
     @staticmethod
     def collect_table_data(table_widget):
@@ -127,9 +69,22 @@ class TemplateTableService(AbstractTableService):
             for col in range(cols):
                 item = table_widget.item(row, col)
                 cell_value = ""
+
+                # Генерируем имя ячейки (например, A1, B2)
+                cell_name = TemplateTableService.generate_cell_name(row, col)
                 cell_config = {
-                    "is_merged": False,
-                    "merge_range": None
+                    "background-color": None,
+                    "height": None,
+                    "width": None,
+                    "text_color": None,
+                    "font": None,
+                    "format": None,
+                    "text_tilt": None,
+                    "underline": None,
+                    "text_size": None,
+                    "cell_name": cell_name,
+                    "merger": None,
+                    "bold": None
                 }
 
                 if item:
@@ -143,15 +98,12 @@ class TemplateTableService(AbstractTableService):
                             # Пытаемся разобрать строку данных как JSON
                             cell_data_json = json.loads(cell_data_str)
 
-                            # Обновляем конфигурацию, если данные в Qt.UserRole существуют
-                            if "merged" in cell_data_json:
-                                cell_config["is_merged"] = cell_data_json["merged"].get("is_merged", False)
-                                cell_config["merge_range"] = cell_data_json["merged"].get("merge_range", None)
+                            # Обновляем конфигурацию из данных в Qt.UserRole
+                            for key in cell_config.keys():
+                                if key in cell_data_json:
+                                    cell_config[key] = cell_data_json[key]
                         except json.JSONDecodeError:
                             print(f"Ошибка парсинга JSON в ячейке ({row}, {col}): {cell_data_str}")
-
-                # Генерируем имя ячейки (например, A1, B2)
-                cell_name = TemplateTableService.generate_cell_name(row, col)
 
                 # Добавляем данные о ячейке, включая конфигурацию
                 cell_data.append({
@@ -163,38 +115,6 @@ class TemplateTableService(AbstractTableService):
         # Печатаем собранные данные для отладки
         print("Собранные данные таблицы:", cell_data)
         return json.dumps(cell_data)
-
-    # @staticmethod
-    # def unmerge_cells(table, top_row, bottom_row, left_col, right_col):
-    #     # Считываем текущее значение основной ячейки (левой верхней)
-    #     main_item = table.item(top_row, left_col)
-    #     if main_item:
-    #         cell_data_str = main_item.data(Qt.UserRole)
-    #         if cell_data_str:
-    #             try:
-    #                 cell_data = json.loads(cell_data_str)
-    #                 main_value = cell_data.get("value", "")
-    #             except json.JSONDecodeError:
-    #                 main_value = ""
-    #         else:
-    #             main_value = ""
-    #     else:
-    #         main_value = ""
-    #
-    #     # Отменяем объединение ячеек
-    #     table.setSpan(top_row, left_col, 1, 1)
-    #
-    #     # Восстанавливаем каждую ячейку в диапазоне
-    #     for row in range(top_row, bottom_row + 1):
-    #         for col in range(left_col, right_col + 1):
-    #             if row == top_row and col == left_col:
-    #                 # Левой верхней ячейке присваиваем основное значение
-    #                 new_item = QTableWidgetItem(main_value)
-    #             else:
-    #                 # Остальные ячейки делаем пустыми
-    #                 new_item = QTableWidgetItem("")
-    #             new_item.setData(Qt.UserRole, json.dumps({"value": new_item.text()}))
-    #             table.setItem(row, col, new_item)
 
     @staticmethod
     def unmerge_cells(table, top_row, bottom_row, left_col, right_col):
@@ -215,11 +135,13 @@ class TemplateTableService(AbstractTableService):
                 if row == top_row and col == left_col:
                     # Левой верхней ячейке присваиваем основное значение
                     new_item = QTableWidgetItem(main_value)
-                    new_item.setData(Qt.UserRole, json.dumps({"value": main_value}))
+                    config = {"merger": None}  # Обновляем конфигурацию
+                    new_item.setData(Qt.UserRole, json.dumps(config))
                 else:
                     # Остальные ячейки делаем пустыми
                     new_item = QTableWidgetItem("")
-                    new_item.setData(Qt.UserRole, json.dumps({"value": ""}))
+                    config = {"merger": None}
+                    new_item.setData(Qt.UserRole, json.dumps(config))
 
                 table.setItem(row, col, new_item)
 
@@ -231,7 +153,7 @@ class TemplateTableService(AbstractTableService):
             if cell_data:
                 try:
                     cell_data_json = json.loads(cell_data)
-                    return cell_data_json.get("merged", {}).get("is_merged", False)
+                    return cell_data_json.get("merger", "")
                 except json.JSONDecodeError:
                     return False
         return False
@@ -240,63 +162,146 @@ class TemplateTableService(AbstractTableService):
     def refresh_table_view(table, template_data):
         """Обновляет таблицу с данными из шаблона, используя JSON."""
         try:
-            # Сброс объединений ячеек перед загрузкой нового шаблона
-            for row in range(table.rowCount()):
-                for col in range(table.columnCount()):
-                    table.setSpan(row, col, 1, 1)  # Сбрасываем объединение для каждой ячейки
+            # Сброс объединений и очистка таблицы
+            TemplateTableService.reset_table(table)
 
-            # Очищаем содержимое таблицы
-            table.clearContents()
-
-            row_count = template_data.get("row_count")
-            col_count = template_data.get("col_count")
+            # Получаем основные параметры шаблона и устанавливаем структуру таблицы
+            row_count = template_data.get("row_count", 0)
+            col_count = template_data.get("col_count", 0)
             background_color = template_data.get("background_color", "#FFFFFF")
             cells = template_data.get("cells", [])
 
-            # Установка количества строк и столбцов в таблице
-            table.setRowCount(row_count)
-            table.setColumnCount(col_count)
-            column_labels = [TemplateTableService.generate_cell_name(0, col) for col in range(col_count)]
-            table.setHorizontalHeaderLabels(column_labels)
-            table.setVerticalHeaderLabels([str(i + 1) for i in range(row_count)])
+            TemplateTableService.setup_table_structure(table, row_count, col_count, background_color)
 
-            # Обновление цвета фона таблицы
-            table.setStyleSheet(f"background-color: {background_color};")
-
-            # Обновление данных ячеек и их объединение
-            merged_cells = []  # Храним информацию об объединенных ячейках для последующего применения
-
-            for cell in cells:
-                cell_name = cell.get("cell_name")
-                value = cell.get("value")
-                config = cell.get("config", {})
-
-                # Преобразуем имя ячейки в индексы строки и столбца
-                col_label = ''.join(filter(str.isalpha, cell_name))
-                row_label = ''.join(filter(str.isdigit, cell_name))
-                col_index = TemplateTableService.column_label_to_index(col_label)
-                row_index = int(row_label) - 1
-
-                # Создаем элемент для таблицы
-                item = QTableWidgetItem(value)
-                item.setData(Qt.UserRole, json.dumps(config))  # Сохраняем конфигурацию как пользовательские данные
-                item.setTextAlignment(Qt.AlignCenter)  # Центрируем текст в ячейке
-                table.setItem(row_index, col_index, item)
-
-                # Если ячейка является объединенной, сохраняем информацию для последующего объединения
-                is_merged = config.get("merged", {}).get("is_merged")
-                merge_range = config.get("merged", {}).get("merge_range")
-
-                if is_merged and merge_range:
-                    merged_cells.append(merge_range)
+            # Обработка данных ячеек
+            merged_cells = TemplateTableService.populate_table_cells(table, cells)
 
             # Обработка объединенных ячеек
-            for merge_range in merged_cells:
-                top_row, left_col, bottom_row, right_col = TemplateTableService.parse_merge_range(merge_range)
-                table.setSpan(top_row, left_col, (bottom_row - top_row + 1), (right_col - left_col + 1))
+            TemplateTableService.apply_merged_cells(table, merged_cells)
 
         except Exception as e:
             print(f"Error refreshing table view: {e}")
+
+    @staticmethod
+    def reset_table(table):
+        """Сбрасывает объединения и очищает таблицу."""
+        for row in range(table.rowCount()):
+            for col in range(table.columnCount()):
+                table.setSpan(row, col, 1, 1)  # Сбрасываем объединение для каждой ячейки
+        table.clearContents()
+
+    @staticmethod
+    def setup_table_structure(table, row_count, col_count, background_color):
+        """Устанавливает количество строк и столбцов в таблице и обновляет цвет фона."""
+        table.setRowCount(row_count)
+        table.setColumnCount(col_count)
+        column_labels = [TemplateTableService.generate_col_name(col) for col in range(col_count)]
+        table.setHorizontalHeaderLabels(column_labels)
+        table.setVerticalHeaderLabels([str(i + 1) for i in range(row_count)])
+        table.setStyleSheet(f"background-color: {background_color};")
+
+    @staticmethod
+    def populate_table_cells(table, cells):
+        """Заполняет таблицу данными ячеек и сохраняет информацию об объединенных ячейках."""
+        merged_cells = []
+
+        for cell in cells:
+            cell_name = cell.get("cell_name")
+            value = cell.get("value")
+            config = cell.get("config", {})
+
+            # Преобразуем имя ячейки в индексы строки и столбца
+            col_label = ''.join(filter(str.isalpha, cell_name))
+            row_label = ''.join(filter(str.isdigit, cell_name))
+            col_index = TemplateTableService.column_label_to_index(col_label)
+            row_index = int(row_label) - 1
+
+            # Создаем элемент для таблицы
+            item = QTableWidgetItem()
+            item.setText(value if value is not None else "")  # Устанавливаем значение, если оно не равно None
+
+            # Устанавливаем конфигурации ячейки
+            TemplateTableService.apply_cell_configuration(item, table, row_index, col_index, config)
+            # Сохраняем всю конфигурацию в Qt.UserRole
+            TemplateTableService.set_cell_data(item, value, config)
+
+            table.setItem(row_index, col_index, item)
+
+            # Проверяем, является ли ячейка объединенной, и сохраняем диапазон
+            merge_range = config.get("merger")
+            if merge_range:
+                merged_cells.append(merge_range)
+
+        return merged_cells
+
+    @staticmethod
+    def apply_cell_configuration(item, table, row_index, col_index, config):
+        """Применяет конфигурации к ячейке, такие как шрифт, цвет, размеры и т.д."""
+        # Цвет ячейки
+        background_color = config.get("background_color")
+        if background_color:
+            item.setBackground(QtGui.QColor(background_color))
+
+        # Цвет текста
+        text_color = config.get("text_color")
+        if text_color:
+            item.setForeground(QtGui.QColor(text_color))
+
+        # Шрифт текста
+        font = config.get("font")
+        if font:
+            q_font = QtGui.QFont()
+            q_font.fromString(font)
+            item.setFont(q_font)
+
+        # Наклон текста
+        if config.get("text_tilt"):
+            font = item.font()
+            font.setItalic(True)
+            item.setFont(font)
+
+        # Подчеркивание текста
+        if config.get("underline"):
+            font = item.font()
+            font.setUnderline(True)
+            item.setFont(font)
+
+        # Жирный текста
+        if config.get("bold"):
+            font = item.font()
+            font.setBold(True)
+            item.setFont(font)
+
+        # Размер текста
+        text_size = config.get("text_size")
+        if text_size:
+            font = item.font()
+            font.setPointSize(text_size)
+            item.setFont(font)
+
+        # Высота и ширина ячейки
+        height = config.get("height")
+        width = config.get("width")
+        if height:
+            table.setRowHeight(row_index, height)
+        if width:
+            table.setColumnWidth(col_index, width)
+
+    @staticmethod
+    def apply_merged_cells(table, merged_cells):
+        """Применяет объединения ячеек к таблице."""
+        for merge_range in merged_cells:
+            top_row, left_col, bottom_row, right_col = TemplateTableService.parse_merge_range(merge_range)
+            table.setSpan(top_row, left_col, (bottom_row - top_row + 1), (right_col - left_col + 1))
+
+    @staticmethod
+    def set_cell_data(item, value, config):
+        """Устанавливает данные в QTableWidgetItem."""
+        # Добавляем значение в конфигурацию, если оно отсутствует
+        config["value"] = value
+        item.setData(Qt.UserRole, json.dumps(config))
+        item.setText(value)
+        item.setTextAlignment(Qt.AlignCenter)  # Центрируем текст в ячейке
 
     @staticmethod
     def parse_merge_range(merge_range):
@@ -320,11 +325,94 @@ class TemplateTableService(AbstractTableService):
         return row_index, col_index
 
     @staticmethod
-    def update_table_data(table, parsed_data):
-        """Обновляет данные таблицы на основе переданных данных"""
-        table.clearContents()
-        for row_index, col_index, value, merged_info in parsed_data:
-            item = QTableWidgetItem(value)
-            if merged_info and merged_info.get("is_merged"):
-                item.setData(Qt.UserRole, json.dumps(merged_info))
-            table.setItem(row_index, col_index, item)
+    def toggle_bold(table):
+        """Переключает жирность текста для выделенных ячеек."""
+        selected_ranges = table.selectedRanges()
+        for selected_range in selected_ranges:
+            for row in range(selected_range.topRow(), selected_range.bottomRow() + 1):
+                for col in range(selected_range.leftColumn(), selected_range.rightColumn() + 1):
+                    item = table.item(row, col)
+                    if item is None:
+                        item = QTableWidgetItem()
+                        table.setItem(row, col, item)
+
+                    # Получаем текущую конфигурацию ячейки
+                    cell_data_str = item.data(Qt.UserRole)
+                    cell_data = json.loads(cell_data_str) if cell_data_str else {}
+
+                    # Переключаем жирность текста
+                    current_font = item.font()
+                    is_bold = not current_font.bold()  # Инвертируем текущее состояние жирности
+                    current_font.setBold(is_bold)
+                    item.setFont(current_font)
+
+                    # Обновляем конфигурацию
+                    if is_bold:
+                        cell_data['bold'] = True
+                    else:
+                        cell_data.pop('bold', None)  # Убираем из конфигурации
+
+                    # Сохраняем данные в Qt.UserRole
+                    item.setData(Qt.UserRole, json.dumps(cell_data))
+
+    @staticmethod
+    def toggle_italic(table):
+        """Переключает наклон текста для выделенных ячеек."""
+        selected_ranges = table.selectedRanges()
+        for selected_range in selected_ranges:
+            for row in range(selected_range.topRow(), selected_range.bottomRow() + 1):
+                for col in range(selected_range.leftColumn(), selected_range.rightColumn() + 1):
+                    item = table.item(row, col)
+                    if item is None:
+                        item = QTableWidgetItem()
+                        table.setItem(row, col, item)
+
+                    # Получаем текущую конфигурацию ячейки
+                    cell_data_str = item.data(Qt.UserRole)
+                    cell_data = json.loads(cell_data_str) if cell_data_str else {}
+
+                    # Переключаем наклон текста
+                    current_font = item.font()
+                    is_italic = not current_font.italic()  # Инвертируем текущее состояние наклона
+                    current_font.setItalic(is_italic)
+                    item.setFont(current_font)
+
+                    # Обновляем конфигурацию
+                    if is_italic:
+                        cell_data['text_tilt'] = True
+                    else:
+                        cell_data.pop('text_tilt', None)  # Убираем из конфигурации
+
+                    # Сохраняем данные в Qt.UserRole
+                    item.setData(Qt.UserRole, json.dumps(cell_data))
+
+    @staticmethod
+    def toggle_underline(table):
+        """Переключает подчеркивание текста для выделенных ячеек."""
+        selected_ranges = table.selectedRanges()
+        for selected_range in selected_ranges:
+            for row in range(selected_range.topRow(), selected_range.bottomRow() + 1):
+                for col in range(selected_range.leftColumn(), selected_range.rightColumn() + 1):
+                    item = table.item(row, col)
+                    if item is None:
+                        item = QTableWidgetItem()
+                        table.setItem(row, col, item)
+
+                    # Получаем текущую конфигурацию ячейки
+                    cell_data_str = item.data(Qt.UserRole)
+                    cell_data = json.loads(cell_data_str) if cell_data_str else {}
+
+                    # Переключаем подчеркивание текста
+                    current_font = item.font()
+                    is_underline = not current_font.underline()  # Инвертируем текущее состояние подчеркивания
+                    current_font.setUnderline(is_underline)
+                    item.setFont(current_font)
+
+                    # Обновляем конфигурацию
+                    if is_underline:
+                        cell_data['underline'] = True
+                    else:
+                        cell_data.pop('underline', None)  # Убираем из конфигурации
+
+                    # Сохраняем данные в Qt.UserRole
+                    item.setData(Qt.UserRole, json.dumps(cell_data))

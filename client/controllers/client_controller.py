@@ -4,13 +4,13 @@ import socket
 import zlib
 
 from PySide6.QtWidgets import QApplication, QMessageBox
-from client.views.login_view import LoginWindow
-from client.views.template_constructor_view import TemplateConstructorWindow
-from client.views.template_settings_window_view import TemplateSettingsWindow
+from client.views.user_authorization_window import LoginWindow
+from client.views.template_constructor_window import TemplateConstructorWindow
+from client.views.window_creating_new_template import WindowCreatingNewTemplate
 from client.services.template_table_service import TemplateTableService
 
 class ClientController:
-    settings_window = None
+    creating_window = None
 
     def __init__(self):
         self.app = QApplication([])
@@ -57,21 +57,28 @@ class ClientController:
         print(f"Шаблоны для конструктора: {template_names}")  # Отладка
         self.template_constructor_view = (TemplateConstructorWindow(admin_name=username, template_names=template_names, controller=self))
         self.template_constructor_view.template_selected.connect(self.request_template_data_in_db)
-        self.template_constructor_view.settings_requested.connect(self.open_settings_window)
+        self.template_constructor_view.create_requested.connect(self.open_create_window)
         self.template_constructor_view.template_save_requested.connect(self.handle_save_template)
         self.template_constructor_view.template_update.connect(self.update_template_data_in_db)
         self.template_constructor_view.delete_template_signal.connect(self.delete_template_in_db)
         self.template_constructor_view.show()
 
-    def open_settings_window(self):
+    #Создаем окно для создания нового шаблона.
+    def open_create_window(self):
         if not hasattr(self, 'template_constructor_view') or self.template_constructor_view is None:
             print("Ошибка: Конструктор шаблонов еще не инициализирован.")
             return
-        if not self.settings_window:
-            # Создаем окно настроек и подключаем сигналы
-            self.settings_window = TemplateSettingsWindow(self.template_constructor_view)
-            self.settings_window.settings_applied.connect(self.template_constructor_view.apply_settings_to_table)
-        self.settings_window.show()
+        if not self.creating_window:
+            self.creating_window = WindowCreatingNewTemplate(self.template_constructor_view)
+            self.creating_window.settings_applied.connect(self.apply_settings_to_table)
+        self.creating_window.show()
+
+    def apply_settings_to_table(self, rows, cols, template_name, color):
+        # Обновление структуры таблицы и имени шаблона
+        column_labels = [TemplateTableService.generate_col_name(col) for col in range(cols)]
+        self.template_constructor_view.update_table_structure(rows, cols, column_labels)
+        self.template_constructor_view.update_template_name(template_name)
+        self.template_constructor_view.update_background_color(color)
 
     def refresh_template_in_window(self, template_data):
         TemplateTableService.refresh_table_view(self.template_constructor_view.table, template_data)
@@ -79,12 +86,14 @@ class ClientController:
     def handle_save_template(self):
         """Обрабатывает запрос на сохранение шаблона из представления."""
         if not self.template_constructor_view.template_name:
-            self.show_message_box("Ошибка", "Имя шаблона не задано. Пожалуйста, введите имя в настройках шаблона.")
+            self.show_message_box("Ошибка", "Имя шаблона не задано. Пожалуйста, введите имя в окне создания шаблона.")
             return
+        #Получаем данные шаблона
         rows = self.template_constructor_view.table.rowCount()
         cols = self.template_constructor_view.table.columnCount()
         cell_data = TemplateTableService.collect_table_data(self.template_constructor_view.table)
-
+        background_color = self.template_constructor_view.background_color
+        #Проверяем на наличие шаблона с таким именем
         if self.check_template_exists_in_db(self.template_constructor_view.template_name):
             confirm = QMessageBox.question(
                 self.template_constructor_view,
@@ -93,9 +102,10 @@ class ClientController:
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No
             )
             if confirm == QMessageBox.Yes:
-                self.update_template_data_in_db(self.template_constructor_view.template_name, rows, cols, cell_data)
+                self.update_template_data_in_db(self.template_constructor_view.template_name,
+                                                rows, cols, cell_data, background_color)
         else:
-            self.save_template_in_db(self.template_constructor_view.template_name, rows, cols, cell_data)
+            self.save_template_in_db(self.template_constructor_view.template_name, rows, cols, cell_data, background_color)
 
     def refresh_template_combo_box_in_window(self, new_template_name):
         if hasattr(self, 'template_constructor_view') and self.template_constructor_view:
@@ -165,14 +175,15 @@ class ClientController:
 
             self.refresh_template_in_window(template_data)
 
-    def update_template_data_in_db(self, template_name, row_count, col_count, cell_data):
+    def update_template_data_in_db(self, template_name, row_count, col_count, cell_data, background_color):
         request_data = {
             "type": "UPDATE_TEMPLATE",
             "data": {
                 "template_name": template_name,
                 "row_count": row_count,
                 "col_count": col_count,
-                "cell_data": cell_data
+                "cell_data": cell_data,
+                "background_color": background_color
             }
         }
         response = ClientController.send_request_to_server(request_data)
@@ -182,7 +193,7 @@ class ClientController:
         else:
             print("Не удалось обновить шаблон.")
 
-    def save_template_in_db(self, template_name, row_count, col_count, cell_data):
+    def save_template_in_db(self, template_name, row_count, col_count, cell_data, background_color):
         # Сначала проверяем, существует ли уже шаблон с таким именем
         if self.check_template_exists_in_db(template_name):
             ClientController.show_message_box(
@@ -196,7 +207,8 @@ class ClientController:
                     "template_name": template_name,
                     "row_count": row_count,
                     "col_count": col_count,
-                    "cell_data": cell_data
+                    "cell_data": cell_data,
+                    "background_color": background_color
                 }
             }
             response = ClientController.send_request_to_server(request_data)

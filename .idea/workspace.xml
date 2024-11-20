@@ -5,11 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="dea0fc47-1b46-438a-8fef-6a87b28abd10" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/server/services/template_database_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/controllers/client_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/controllers/client_controller.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/services/template_table_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/services/template_table_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/views/template_constructor_view.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/template_constructor_view.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/views/login_view.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/user_authorization_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/views/template_constructor_view.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/template_constructor_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/views/template_settings_window_view.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/window_creating_new_template.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main_client.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_client.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main_server.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_server.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/controllers/server_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/controllers/server_controller.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/models/db_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/models/db_model.py" afterDir="false" />
     </list>
@@ -49,12 +53,15 @@
     "Python.client_controller.executor": "Debug",
     "Python.db_connect.executor": "Run",
     "Python.db_model.executor": "Debug",
+    "Python.login_view.executor": "Run",
     "Python.main.executor": "Run",
-    "Python.main_client.executor": "Run",
-    "Python.main_server.executor": "Run",
+    "Python.main_client.executor": "Debug",
+    "Python.main_server.executor": "Debug",
     "Python.server_controller.executor": "Run",
-    "Python.template_constructor_view.executor": "Run",
-    "Python.template_table_service.executor": "Run",
+    "Python.template_constructor_view.executor": "Debug",
+    "Python.template_settings_window_view.executor": "Debug",
+    "Python.template_table_service.executor": "Debug",
+    "Python.test.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "main",
     "last_opened_file_path": "C:/Users/kyrag/PycharmProjects/URD/client/icons",
@@ -107,21 +114,39 @@
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/client/controllers/client_controller.py</url>
+          <line>197</line>
+          <option name="timeStamp" value="83" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/server/controllers/server_controller.py</url>
+          <line>76</line>
+          <option name="timeStamp" value="93" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/server/models/db_model.py</url>
-          <line>220</line>
-          <option name="timeStamp" value="34" />
+          <line>33</line>
+          <option name="timeStamp" value="94" />
         </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/client/services/template_table_service.py</url>
-          <line>34</line>
-          <option name="timeStamp" value="46" />
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/client/controllers/client_controller.py</url>
+          <line>167</line>
+          <option name="timeStamp" value="97" />
         </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+        <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/client/services/template_table_service.py</url>
-          <line>248</line>
-          <option name="timeStamp" value="53" />
+          <line>165</line>
+          <option name="timeStamp" value="98" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/client/services/template_table_service.py</url>
+          <line>205</line>
+          <option name="timeStamp" value="99" />
         </line-breakpoint>
       </breakpoints>
+      <breakpoints-defaults>
+        <breakpoint type="python-line" />
+      </breakpoints-defaults>
     </breakpoint-manager>
   </component>
 </project>
