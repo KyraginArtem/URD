@@ -5,17 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="dea0fc47-1b46-438a-8fef-6a87b28abd10" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/controllers/client_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/controllers/client_controller.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/services/template_table_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/services/template_table_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/views/login_view.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/user_authorization_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/views/template_constructor_view.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/template_constructor_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/views/template_settings_window_view.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/window_creating_new_template.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main_client.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_client.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main_server.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_server.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/controllers/server_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/controllers/server_controller.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/models/db_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/models/db_model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/views/template_constructor_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/template_constructor_window.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -55,8 +48,8 @@
     "Python.db_model.executor": "Debug",
     "Python.login_view.executor": "Run",
     "Python.main.executor": "Run",
-    "Python.main_client.executor": "Debug",
-    "Python.main_server.executor": "Debug",
+    "Python.main_client.executor": "Run",
+    "Python.main_server.executor": "Run",
     "Python.server_controller.executor": "Run",
     "Python.template_constructor_view.executor": "Debug",
     "Python.template_settings_window_view.executor": "Debug",
@@ -77,6 +70,11 @@
       <recent name="C:\Users\kyrag\PycharmProjects\URD\client" />
       <recent name="C:\Users\kyrag\PycharmProjects\URD\server" />
     </key>
+  </component>
+  <component name="RunAnythingCache">
+    <option name="myCommands">
+      <command value="template_save_requested" />
+    </option>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -115,7 +113,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/client/controllers/client_controller.py</url>
-          <line>197</line>
+          <line>201</line>
           <option name="timeStamp" value="83" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
@@ -129,24 +127,51 @@
           <option name="timeStamp" value="94" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/client/controllers/client_controller.py</url>
-          <line>167</line>
-          <option name="timeStamp" value="97" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/client/services/template_table_service.py</url>
-          <line>165</line>
-          <option name="timeStamp" value="98" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/client/services/template_table_service.py</url>
-          <line>205</line>
+          <line>208</line>
           <option name="timeStamp" value="99" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/server/models/db_model.py</url>
+          <line>219</line>
+          <option name="timeStamp" value="101" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/client/services/template_table_service.py</url>
+          <line>483</line>
+          <option name="timeStamp" value="103" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/client/controllers/client_controller.py</url>
+          <line>95</line>
+          <option name="timeStamp" value="105" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/client/services/template_table_service.py</url>
+          <line>172</line>
+          <option name="timeStamp" value="106" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/client/services/template_table_service.py</url>
+          <line>561</line>
+          <option name="timeStamp" value="107" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/client/views/template_constructor_window.py</url>
+          <line>175</line>
+          <option name="timeStamp" value="108" />
         </line-breakpoint>
       </breakpoints>
       <breakpoints-defaults>
         <breakpoint type="python-line" />
       </breakpoints-defaults>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
     </breakpoint-manager>
   </component>
 </project>

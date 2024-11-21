@@ -2,8 +2,9 @@
 import json
 
 from PySide6 import QtGui
-from PySide6.QtGui import Qt
-from PySide6.QtWidgets import QTableWidgetItem
+from PySide6.QtGui import Qt, QColor
+from PySide6.QtWidgets import QTableWidgetItem, QColorDialog
+
 # from client.services.abstract_table_service import AbstractTableService
 
 class TemplateTableService:
@@ -73,7 +74,7 @@ class TemplateTableService:
                 # Генерируем имя ячейки (например, A1, B2)
                 cell_name = TemplateTableService.generate_cell_name(row, col)
                 cell_config = {
-                    "background-color": None,
+                    "background_color": None,
                     "height": None,
                     "width": None,
                     "text_color": None,
@@ -97,7 +98,9 @@ class TemplateTableService:
                         try:
                             # Пытаемся разобрать строку данных как JSON
                             cell_data_json = json.loads(cell_data_str)
-
+                            #Записываем ширину и высоту
+                            cell_data_json['height'] =  table_widget.rowHeight(row)
+                            cell_data_json['width'] = table_widget.columnWidth(col)
                             # Обновляем конфигурацию из данных в Qt.UserRole
                             for key in cell_config.keys():
                                 if key in cell_data_json:
@@ -282,10 +285,18 @@ class TemplateTableService:
         # Высота и ширина ячейки
         height = config.get("height")
         width = config.get("width")
+        # Устанавливаем высоту строки
         if height:
             table.setRowHeight(row_index, height)
+        else:
+            table.setRowHeight(row_index, 20)  # Дефолтное значение высоты строки
+
+        # Устанавливаем ширину столбца
         if width:
             table.setColumnWidth(col_index, width)
+        else:
+            table.setColumnWidth(col_index, 100)  # Дефолтное значение ширины столбца
+
 
     @staticmethod
     def apply_merged_cells(table, merged_cells):
@@ -416,3 +427,182 @@ class TemplateTableService:
 
                     # Сохраняем данные в Qt.UserRole
                     item.setData(Qt.UserRole, json.dumps(cell_data))
+
+    @staticmethod
+    def apply_text_color(table, color):
+        """Применяет цвет текста к выделенным ячейкам."""
+        selected_ranges = table.selectedRanges()
+        for selected_range in selected_ranges:
+            for row in range(selected_range.topRow(), selected_range.bottomRow() + 1):
+                for col in range(selected_range.leftColumn(), selected_range.rightColumn() + 1):
+                    item = table.item(row, col)
+                    if item is None:
+                        item = QTableWidgetItem()
+                        table.setItem(row, col, item)
+
+                    # Устанавливаем цвет текста
+                    item.setForeground(QColor(color))
+
+                    # Сохраняем цвет текста в конфигурации
+                    cell_data_str = item.data(Qt.UserRole)
+                    if cell_data_str:
+                        cell_data = json.loads(cell_data_str)
+                    else:
+                        cell_data = {}
+
+                    cell_data['text_color'] = color
+                    item.setData(Qt.UserRole, json.dumps(cell_data))
+
+    @staticmethod
+    def apply_cell_background_color(table, color):
+        """Применяет цвет фона к выделенным ячейкам."""
+        selected_ranges = table.selectedRanges()
+        for selected_range in selected_ranges:
+            for row in range(selected_range.topRow(), selected_range.bottomRow() + 1):
+                for col in range(selected_range.leftColumn(), selected_range.rightColumn() + 1):
+                    item = table.item(row, col)
+                    if item is None:
+                        item = QTableWidgetItem()
+                        table.setItem(row, col, item)
+
+                    # Устанавливаем цвет фона
+                    item.setBackground(QColor(color))
+
+                    # Сохраняем цвет фона в конфигурации
+                    cell_data_str = item.data(Qt.UserRole)
+                    if cell_data_str:
+                        cell_data = json.loads(cell_data_str)
+                    else:
+                        cell_data = {}
+
+                    cell_data['background_color'] = color
+                    item.setData(Qt.UserRole, json.dumps(cell_data))
+
+    @staticmethod
+    def change_decimal_places(table, increase=True):
+        """Изменяет количество знаков после запятой для выбранных ячеек."""
+        selected_ranges = table.selectedRanges()
+
+        for selected_range in selected_ranges:
+            for row in range(selected_range.topRow(), selected_range.bottomRow() + 1):
+                for col in range(selected_range.leftColumn(), selected_range.rightColumn() + 1):
+                    item = table.item(row, col)
+                    if item is None:
+                        item = QTableWidgetItem()
+                        table.setItem(row, col, item)
+
+                    # Получаем текущую конфигурацию ячейки
+                    cell_data_str = item.data(Qt.UserRole)
+                    if cell_data_str:
+                        cell_config = json.loads(cell_data_str)
+                    else:
+                        cell_config = {}
+
+                    # Изменяем количество знаков после запятой
+                    current_format = cell_config.get("format", 0)
+                    if current_format is None:
+                        current_format = 0
+                    if increase:
+                        current_format += 1
+                    else:
+                        current_format = max(0, current_format - 1)
+
+                    # Сохраняем изменённый формат
+                    cell_config["format"] = current_format
+                    item.setData(Qt.UserRole, json.dumps(cell_config))
+
+                    # Если значение в ячейке является числом, обновляем отображение
+                    value = item.text()
+                    try:
+                        numeric_value = float(value)
+                        formatted_value = f"{numeric_value:.{current_format}f}"
+                        item.setText(formatted_value)
+                    except ValueError:
+                        # Если значение не число, оставляем текст как есть
+                        pass
+
+    @staticmethod
+    def change_font_size(table, font_size):
+        """Изменяет размер шрифта для выделенных ячеек."""
+        selected_ranges = table.selectedRanges()
+
+        for selected_range in selected_ranges:
+            for row in range(selected_range.topRow(), selected_range.bottomRow() + 1):
+                for col in range(selected_range.leftColumn(), selected_range.rightColumn() + 1):
+                    item = table.item(row, col)
+                    if item is None:
+                        item = QTableWidgetItem()
+                        table.setItem(row, col, item)
+
+                    # Получаем текущую конфигурацию ячейки
+                    cell_data_str = item.data(Qt.UserRole)
+                    if cell_data_str:
+                        cell_config = json.loads(cell_data_str)
+                    else:
+                        cell_config = {}
+
+                    # Устанавливаем новый размер шрифта
+                    cell_config["text_size"] = font_size
+
+                    # Применяем новый шрифт
+                    font = item.font()
+                    font.setPointSize(font_size)
+                    item.setFont(font)
+
+                    # Сохраняем конфигурацию
+                    item.setData(Qt.UserRole, json.dumps(cell_config))
+
+                    # Центрируем текст в ячейке
+                    item.setTextAlignment(Qt.AlignCenter)
+
+    # @staticmethod
+    # def resize_table(table, new_row_count, new_col_count, background_color=None):
+    #     """Изменяет количество строк и столбцов в таблице и сохраняет цвет фона."""
+    #
+    #     current_row_count = table.rowCount()
+    #     current_col_count = table.columnCount()
+    #
+    #     # Если новые размеры меньше текущих, данные удаляются из лишних ячеек
+    #     if new_row_count < current_row_count or new_col_count < current_col_count:
+    #         for row in range(new_row_count, current_row_count):
+    #             for col in range(current_col_count):
+    #                 table.takeItem(row, col)  # Удаляем строки
+    #         for col in range(new_col_count, current_col_count):
+    #             for row in range(new_row_count):
+    #                 table.takeItem(row, col)  # Удаляем столбцы
+    #
+    #     # Изменяем размер таблицы
+    #     table.setRowCount(new_row_count)
+    #     table.setColumnCount(new_col_count)
+    #
+    #     # Обновляем заголовки
+    #     table.setHorizontalHeaderLabels([chr(65 + i) for i in range(new_col_count)])
+    #     table.setVerticalHeaderLabels([str(i + 1) for i in range(new_row_count)])
+    #
+    #     # Устанавливаем сохранённый цвет фона, если передан
+    #     if background_color:
+    #         table.setStyleSheet(f"background-color: {background_color};")
+    #
+    #     print(f"Размер таблицы изменен: строки={new_row_count}, столбцы={new_col_count}")
+    @staticmethod
+    def resize_table(table, new_row_count, new_col_count, background_color):
+        """Изменяет размер таблицы и сохраняет размеры строк и столбцов."""
+        # Сохранение текущих размеров строк и столбцов
+        row_sizes = {row: table.rowHeight(row) for row in range(table.rowCount())}
+        col_sizes = {col: table.columnWidth(col) for col in range(table.columnCount())}
+
+        # Изменение структуры таблицы
+        table.setRowCount(new_row_count)
+        table.setColumnCount(new_col_count)
+        table.setStyleSheet(f"background-color: {background_color};")
+
+        # Восстановление размеров строк
+        for row, height in row_sizes.items():
+            if row < new_row_count:  # Применяем только для существующих строк
+                table.setRowHeight(row, height)
+
+        # Восстановление размеров столбцов
+        for col, width in col_sizes.items():
+            if col < new_col_count:  # Применяем только для существующих столбцов
+                table.setColumnWidth(col, width)
+

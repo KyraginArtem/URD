@@ -82,6 +82,10 @@ class ClientController:
 
     def refresh_template_in_window(self, template_data):
         TemplateTableService.refresh_table_view(self.template_constructor_view.table, template_data)
+        # Извлекаем цвет фона из данных шаблона
+        background_color = template_data.get("background_color", "#FFFFFF")
+        # Передаём цвет фона в представление
+        self.template_constructor_view.update_background_color(background_color)
 
     def handle_save_template(self):
         """Обрабатывает запрос на сохранение шаблона из представления."""
