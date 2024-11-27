@@ -555,35 +555,6 @@ class TemplateTableService:
                     # Центрируем текст в ячейке
                     item.setTextAlignment(Qt.AlignCenter)
 
-    # @staticmethod
-    # def resize_table(table, new_row_count, new_col_count, background_color=None):
-    #     """Изменяет количество строк и столбцов в таблице и сохраняет цвет фона."""
-    #
-    #     current_row_count = table.rowCount()
-    #     current_col_count = table.columnCount()
-    #
-    #     # Если новые размеры меньше текущих, данные удаляются из лишних ячеек
-    #     if new_row_count < current_row_count or new_col_count < current_col_count:
-    #         for row in range(new_row_count, current_row_count):
-    #             for col in range(current_col_count):
-    #                 table.takeItem(row, col)  # Удаляем строки
-    #         for col in range(new_col_count, current_col_count):
-    #             for row in range(new_row_count):
-    #                 table.takeItem(row, col)  # Удаляем столбцы
-    #
-    #     # Изменяем размер таблицы
-    #     table.setRowCount(new_row_count)
-    #     table.setColumnCount(new_col_count)
-    #
-    #     # Обновляем заголовки
-    #     table.setHorizontalHeaderLabels([chr(65 + i) for i in range(new_col_count)])
-    #     table.setVerticalHeaderLabels([str(i + 1) for i in range(new_row_count)])
-    #
-    #     # Устанавливаем сохранённый цвет фона, если передан
-    #     if background_color:
-    #         table.setStyleSheet(f"background-color: {background_color};")
-    #
-    #     print(f"Размер таблицы изменен: строки={new_row_count}, столбцы={new_col_count}")
     @staticmethod
     def resize_table(table, new_row_count, new_col_count, background_color):
         """Изменяет размер таблицы и сохраняет размеры строк и столбцов."""

@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QComboBox, QPushButt
     QTableWidgetItem, QMessageBox, QFontComboBox, QColorDialog, QLineEdit
 from PySide6.QtCore import Qt, Signal, QFile, QSize
 
+from client.services.table_cell_parser import TableCellParser
 from client.services.template_table_service import TemplateTableService
 from client.views.window_creating_new_template import WindowCreatingNewTemplate
 
@@ -53,7 +54,7 @@ class TemplateConstructorWindow(QWidget):
         # Кнопка для открытия окна создания шаблона
         settings_button = QPushButton("Создать новый шаблон")
         settings_button.clicked.connect(
-            self.open_create_template_window)  # Подключаем к методу для открытия окна создания
+            self.create_requested)  # Подключаем к методу для открытия окна создания
         top_panel_layout.addWidget(settings_button)
 
         # Метка для отображения имени шаблона
@@ -209,25 +210,26 @@ class TemplateConstructorWindow(QWidget):
         self.table.setVerticalHeaderLabels([str(i + 1) for i in range(10)])
         main_layout.addWidget(self.table)
 
+        self.table.itemChanged.connect(lambda item: self.handle_cell_change(item.row(), item.column()))
         # Устанавливаем основной макет
         self.setLayout(main_layout)
 
-    def open_create_template_window(self):
-        # Открытие окна создания нового шаблона
-        self.create_template_window = WindowCreatingNewTemplate(self)
-        self.create_template_window.settings_applied.connect(self.apply_settings_to_template)
-        self.create_template_window.show()
+    # def open_create_template_window(self):
+    #     # Открытие окна создания нового шаблона
+    #     self.create_template_window = WindowCreatingNewTemplate(self)
+    #     self.create_template_window.settings_applied.connect(self.apply_settings_to_template)
+    #     self.create_template_window.show()
 
-    def apply_settings_to_template(self, rows, cols, template_name, background_color):
-        # Применяем настройки
-        self.template_name = template_name
-        self.background_color = background_color  # Сохраняем цвет фона
-
-        self.update_table_structure(rows, cols, [chr(65 + i) for i in range(cols)])
-        self.update_background_color(background_color)
-
-        # Обновляем имя шаблона в метке
-        self.update_template_name(template_name)
+    # def apply_settings_to_template(self, rows, cols, template_name, background_color):
+    #     # Применяем настройки
+    #     self.template_name = template_name
+    #     self.background_color = background_color  # Сохраняем цвет фона
+    #
+    #     self.update_table_structure(rows, cols, [chr(65 + i) for i in range(cols)])
+    #     self.update_background_color(background_color)
+    #
+    #     # Обновляем имя шаблона в метке
+    #     self.update_template_name(template_name)
 
     def load_styles(self):
         """Загружает стили из файла .qss"""
@@ -295,10 +297,6 @@ class TemplateConstructorWindow(QWidget):
         self.template_name = template_name
         self.template_name_label.setText(f"Шаблон: {template_name}")
 
-    # def update_background_color(self, color):
-    #     # Применяем цвет фона к таблице
-    #     self.table.setStyleSheet(f"background-color: {color};")
-
     def add_template_name_to_combo(self, template_name):
     # Проверяем, что имя шаблона не пустое и не дублируется
         if template_name and template_name not in [self.template_combo.itemText(i) for i in range(self.template_combo.count())]:
@@ -312,6 +310,7 @@ class TemplateConstructorWindow(QWidget):
         if index != -1:
             self.template_combo.removeItem(index)
 
+    #Метод закомментирован для оптимизации
     def set_current_template_in_combo(self, template_name):
         # Устанавливаем текущий элемент в комбо-боксе на только что добавленный шаблон
         index = self.template_combo.findText(template_name)
@@ -370,3 +369,26 @@ class TemplateConstructorWindow(QWidget):
         """Обновляет цвет фона таблицы."""
         self.background_color = color  # Сохраняем цвет в переменную
         self.table.setStyleSheet(f"background-color: {color};")
+
+    def handle_cell_change(self, row, col):
+        """
+        Обрабатывает изменение значения в ячейке. Если текст начинается с '=', выполняется парсинг формулы.
+        """
+        item = self.table.item(row, col)
+        if not item:
+            return
+
+        text = item.text().strip()
+        if text.startswith("="):
+            try:
+                result = TableCellParser.parse_formula(text, self.table)
+                # Сохраняем результат в ячейку
+                item.setText(str(result))
+
+                # Сохраняем формулу в Qt.UserRole для восстановления
+                cell_data_str = item.data(Qt.UserRole)
+                cell_data = json.loads(cell_data_str) if cell_data_str else {}
+                cell_data["formula"] = text
+                item.setData(Qt.UserRole, json.dumps(cell_data))
+            except ValueError as e:
+                QMessageBox.warning(self, "Ошибка формулы", str(e))

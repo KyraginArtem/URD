@@ -1,9 +1,9 @@
-# server/models/db_model.py
+# server/models/template_db_model.py
 import json
 
 import pymssql
 
-class DBModel:
+class TemplateDBModel:
     def __init__(self):
         # Подключаемся к базе данных MS SQL Server
         self.connection = pymssql.connect(

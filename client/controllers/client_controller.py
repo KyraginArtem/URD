@@ -198,30 +198,24 @@ class ClientController:
             print("Не удалось обновить шаблон.")
 
     def save_template_in_db(self, template_name, row_count, col_count, cell_data, background_color):
-        # Сначала проверяем, существует ли уже шаблон с таким именем
-        if self.check_template_exists_in_db(template_name):
-            ClientController.show_message_box(
-                self, "Ошибка", f"Шаблон с именем '{template_name}' уже существует.", QMessageBox.Warning
-            )
-            return
-        else:
-            request_data = {
-                "type": "SAVE_TEMPLATE",
-                "data": {
-                    "template_name": template_name,
-                    "row_count": row_count,
-                    "col_count": col_count,
-                    "cell_data": cell_data,
-                    "background_color": background_color
-                }
+        request_data = {
+            "type": "SAVE_TEMPLATE",
+            "data": {
+                "template_name": template_name,
+                "row_count": row_count,
+                "col_count": col_count,
+                "cell_data": cell_data,
+                "background_color": background_color
             }
-            response = ClientController.send_request_to_server(request_data)
+        }
+        response = self.send_request_to_server(request_data)
 
-            if response.get("status") == "success":
-                self.refresh_template_combo_box_in_window(template_name)
-                self.template_constructor_view.set_current_template_in_combo(template_name)
-            else:
-                print("Не удалось сохранить шаблон.")
+        if response.get("status") == "success":
+            self.refresh_template_combo_box_in_window(template_name)
+            #Отключил для оптимизации, выбор шаблоне в комбо-боксе запускает запрос информации о шаблоне из БД
+            # self.template_constructor_view.set_current_template_in_combo(template_name)
+        else:
+            print("Не удалось сохранить шаблон.")
 
     def delete_template_in_db(self, template_name):
         # Сначала проверяем, существует ли уже шаблон с таким именем
