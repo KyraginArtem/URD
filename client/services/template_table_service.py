@@ -3,7 +3,11 @@ import json
 
 from PySide6 import QtGui
 from PySide6.QtGui import Qt, QColor
-from PySide6.QtWidgets import QTableWidgetItem, QColorDialog
+from PySide6.QtWidgets import QTableWidgetItem, QColorDialog, QFileDialog, QMessageBox
+from openpyxl.styles import Font, PatternFill, Alignment, Side, Border
+from openpyxl.utils import get_column_letter
+from openpyxl.workbook import Workbook
+
 
 # from client.services.abstract_table_service import AbstractTableService
 
@@ -576,4 +580,167 @@ class TemplateTableService:
         for col, width in col_sizes.items():
             if col < new_col_count:  # Применяем только для существующих столбцов
                 table.setColumnWidth(col, width)
+
+    @staticmethod
+    def populate_excel_with_data(ws, table_widget):
+        """Заполняет Excel-таблицу данными, форматами и размерами."""
+        for row in range(table_widget.rowCount()):
+            for col in range(table_widget.columnCount()):
+                item = table_widget.item(row, col)
+                if item:
+                    # Write the text value to the cell
+                    text = item.text()
+                    cell = ws.cell(row=row + 1, column=col + 1, value=text)
+
+                    # Apply cell formatting (font, alignment, etc.)
+                    TemplateTableService.apply_cell_formatting(cell, item)
+
+                    # Handle cell dimensions (width and height)
+                    TemplateTableService.handle_cell_dimensions(ws, row, col, table_widget)
+
+    @staticmethod
+    def apply_cell_formatting(cell, item):
+        """
+        Применяет форматирование и размеры к ячейке Excel на основе данных из Qt.UserRole.
+        Если данные отсутствуют, применяются стандартные значения.
+        """
+        cell_data_str = item.data(Qt.UserRole)
+        if cell_data_str:
+            try:
+                cell_data = json.loads(cell_data_str)
+
+                # Устанавливаем шрифт (по умолчанию "Calibri", размер 12)
+                font_string = cell_data.get("font", "Calibri,12")
+                if isinstance(font_string, str):
+                    font_parts = font_string.split(",")
+                    font_name = font_parts[0] if len(font_parts) > 0 else "Calibri"
+                else:
+                    font_name = "Calibri"
+                font_size = cell_data.get("text_size", 12)
+                bold = cell_data.get("bold", False) if cell_data.get("bold") is not None else False
+                italic = cell_data.get("text_tilt", False) if cell_data.get("text_tilt") is not None else False
+                underline = "single" if cell_data.get("underline", False) else None
+
+                # Устанавливаем цвет текста (по умолчанию чёрный)
+                text_color = cell_data.get("text_color", "#000000")
+                text_color = text_color.lstrip("#") if isinstance(text_color, str) and text_color.startswith(
+                    "#") else "000000"
+                # Устанавливаем цвет фона (по умолчанию белый)
+                background_color = cell_data.get("background_color", "#FFFFFF")
+                background_color = background_color.lstrip("#") if isinstance(background_color,
+                                                                              str) and background_color.startswith(
+                    "#") else "FFFFFF"
+
+                # Применяем форматирование текста
+                cell.font = Font(
+                    name=font_name,
+                    size=font_size,
+                    bold=bold,
+                    italic=italic,
+                    underline=underline,
+                    color=text_color,
+                )
+
+                # Устанавливаем цвет фона ячейки
+                cell.fill = PatternFill(
+                    start_color=background_color,
+                    end_color=background_color,
+                    fill_type="solid",
+                )
+
+                # Устанавливаем выравнивание текста (по умолчанию по центру)
+                alignment = cell_data.get("alignment", {})
+                cell.alignment = Alignment(
+                    horizontal=alignment.get("horizontal", "center"),
+                    vertical=alignment.get("vertical", "center"),
+                )
+
+                # Обрабатываем размеры ячейки
+                width = cell_data.get("width", 100)  # Ширина по умолчанию
+                height = cell_data.get("height", 20)  # Высота по умолчанию
+
+                col_letter = get_column_letter(cell.column)
+
+                # Устанавливаем ширину столбца
+                cell.parent.column_dimensions[col_letter].width = max(float(width) / 7,
+                                                                      10)  # Excel использует ширину в условных единицах
+                cell.parent.row_dimensions[cell.row].height = height
+
+                # Устанавливаем границы (по умолчанию чёрные тонкие линии)
+                thin = Side(border_style="thin", color="000000")
+                cell.border = Border(top=thin, left=thin, right=thin, bottom=thin)
+
+            except (json.JSONDecodeError, ValueError, TypeError) as e:
+                print(f"Ошибка обработки ячейки: {e}")
+                print(f"Данные ячейки: {cell_data_str}")
+
+    @staticmethod
+    def handle_cell_dimensions(ws, row, col, table_widget):
+        """Обрабатывает размеры строк и столбцов."""
+        # Получаем ширину и высоту из данных ячейки
+        item = table_widget.item(row, col)
+        if item:
+            cell_data_str = item.data(Qt.UserRole)
+            if cell_data_str:
+                try:
+                    cell_data = json.loads(cell_data_str)
+                    width = cell_data.get("width", table_widget.columnWidth(col))
+                    height = cell_data.get("height", table_widget.rowHeight(row))
+
+                    if width:
+                        col_letter = get_column_letter(col + 1)
+                        ws.column_dimensions[col_letter].width = max(float(width) / 7, 10)
+                    if height:
+                        ws.row_dimensions[row + 1].height = max(float(height) / 15, 15)
+                except json.JSONDecodeError:
+                    print(f"Ошибка декодирования JSON для размеров ячейки: {cell_data_str}")
+
+    @staticmethod
+    def handle_merged_cells(ws, table_widget):
+        """Обрабатывает объединенные ячейки в таблице."""
+        for row in range(table_widget.rowCount()):
+            for col in range(table_widget.columnCount()):
+                item = table_widget.item(row, col)
+                if item:
+                    cell_data_str = item.data(Qt.UserRole)
+                    if cell_data_str:
+                        try:
+                            cell_data = json.loads(cell_data_str)
+                            if "merger" in cell_data and cell_data["merger"]:
+                                merger = cell_data["merger"]  # Формат: "A1:C1"
+                                start_cell, end_cell = merger.split(":")
+                                ws.merge_cells(f"{start_cell}:{end_cell}")
+                        except json.JSONDecodeError:
+                            print(f"Ошибка обработки объединённых ячеек ({row}, {col})")
+
+    @staticmethod
+    def export_to_excel(table_widget):
+        """
+        Экспорт данных таблицы с конфигурациями в файл Excel.
+        :param table_widget: QTableWidget - виджет с данными таблицы
+        """
+        # Выбираем путь для сохранения файла
+        file_path, _ = QFileDialog.getSaveFileName(None, "Сохранить как", "", "Excel Files (*.xlsx)")
+        if not file_path:
+            return  # Пользователь отменил выбор
+
+        try:
+            # Создаем новую книгу Excel
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Экспорт таблицы"
+
+            # Populate data, formats, and dimensions
+            TemplateTableService.populate_excel_with_data(ws, table_widget)
+
+            # Handle merged cells
+            TemplateTableService.handle_merged_cells(ws, table_widget)
+
+            # Сохраняем файл
+            wb.save(file_path)
+            QMessageBox.information(None, "Успех", f"Файл успешно сохранен в {file_path}")
+
+        except Exception as e:
+            QMessageBox.critical(None, "Ошибка", f"Не удалось сохранить файл: {str(e)}")
+
 

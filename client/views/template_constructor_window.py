@@ -1,33 +1,38 @@
-# client/views/template_constructor_window.py
+# ========== Импорты ==========
 import json
 import os
-
 from PySide6 import QtGui
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QComboBox, QPushButton, QTableWidget, QHBoxLayout, \
-    QTableWidgetItem, QMessageBox, QFontComboBox, QColorDialog, QLineEdit
+from PySide6.QtWidgets import (
+    QWidget, QLabel, QVBoxLayout, QComboBox, QPushButton, QTableWidget,
+    QHBoxLayout, QTableWidgetItem, QMessageBox, QFontComboBox, QColorDialog, QLineEdit
+)
 from PySide6.QtCore import Qt, Signal, QFile, QSize
-
 from client.services.table_cell_parser import TableCellParser
 from client.services.template_table_service import TemplateTableService
 from client.views.window_creating_new_template import WindowCreatingNewTemplate
 
-
+# ========== Класс TemplateConstructorWindow ==========
 class TemplateConstructorWindow(QWidget):
-    create_requested = Signal()  # Открытия окна настроек
+    # -------- Сигналы --------
+    create_requested = Signal()  # Открытие окна настроек
     template_selected = Signal(str)  # Выбор шаблона
-    template_save_requested = Signal()
-    delete_template_signal = Signal(str)
-    template_update = Signal(str, int, int, str)
+    template_save_requested = Signal()  # Сохранение шаблона
+    delete_template_signal = Signal(str)  # Удаление шаблона
+    template_update = Signal(str, int, int, str)  # Обновление шаблона
 
+    # -------- Инициализация --------
     def __init__(self, admin_name, template_names, controller):
         super().__init__()
         self.setWindowTitle("Редактор шаблонов")
         self.resize(1000, 700)
+
+        # Параметры
         self.admin_name = admin_name
         self.template_names = template_names
         self.controller = controller
 
+        # Переменные интерфейса
         self.template_combo = None
         self.template_name = ""
         self.settings_window = None
@@ -35,116 +40,116 @@ class TemplateConstructorWindow(QWidget):
         self.font_combo_box = None
         self.background_color = "#FFFFFF"
 
+        # Инициализация интерфейса
         self.init_ui()
         self.load_styles()
 
+    # -------- Основной метод создания интерфейса --------
     def init_ui(self):
+        """
+        Формирует весь интерфейс: панель, меню, таблицу.
+        """
+        # Основной лейаут
         main_layout = QVBoxLayout()
-        top_panel_layout = QHBoxLayout()
-        secondary_left_menu_layout = QHBoxLayout()
-        secondary_right_menu_layout = QHBoxLayout()
+
+        # Создание и добавление частей интерфейса
+        main_layout.addLayout(self.create_top_panel())  # Верхняя панель
+        lower_menu = self.create_side_menus()  # нижнее меню меню
+        main_layout.addLayout(lower_menu)
+        self.create_table(main_layout)  # Таблица
+
+        # Установка лейаута
+        self.setLayout(main_layout)
+
+    # -------- Методы создания секций интерфейса --------
+    def create_top_panel(self):
+        """
+        Создает верхнюю панель с выпадающим меню, кнопками, метками.
+        """
+        layout = QHBoxLayout()
 
         # Выпадающее меню для выбора шаблона
         self.template_combo = QComboBox()
         self.template_combo.addItems(self.template_names)
         self.template_combo.currentTextChanged.connect(self.name_on_template_selected)
-        self.template_combo.currentTextChanged.connect(lambda: self.template_selected.emit(self.template_combo.currentText()))  # Подключаем сигнал выбора шаблона
-        top_panel_layout.addWidget(self.template_combo)
+        self.template_combo.currentTextChanged.connect(
+            lambda: self.template_selected.emit(self.template_combo.currentText())
+        )
+        layout.addWidget(self.template_combo)
 
-        # Кнопка для открытия окна создания шаблона
-        settings_button = QPushButton("Создать новый шаблон")
-        settings_button.clicked.connect(
-            self.create_requested)  # Подключаем к методу для открытия окна создания
-        top_panel_layout.addWidget(settings_button)
+        # Кнопка для создания нового шаблона
+        create_button = QPushButton("Создать шаблон")
+        create_button.clicked.connect(self.create_requested)
+        layout.addWidget(create_button)
 
-        # Метка для отображения имени шаблона
+        # Метка имени шаблона
         self.template_name_label = QLabel("Шаблон: Не выбран")
-        top_panel_layout.addWidget(self.template_name_label)
+        layout.addWidget(self.template_name_label)
 
-        # Метка с именем администратора
+        # Метка имени администратора
         admin_label = QLabel(self.admin_name)
         admin_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        top_panel_layout.addWidget(admin_label)
+        layout.addWidget(admin_label)
 
-        # Добавляем верхнюю панель в основной макет
-        main_layout.addLayout(top_panel_layout)
-        main_layout.addLayout(secondary_left_menu_layout)
-        main_layout.addLayout(secondary_right_menu_layout)
+        return layout
 
-        # Определяем текущую директорию, в которой находится данный файл
+    def create_side_menus(self):
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        icon_path_merge_cells = os.path.join(current_dir, "..", "icons", "merge_cells.png")
-        # Кнопка "Объединить" — стилизуем её как кнопку объединения ячеек
+
+        # Нижнее меню
+        lower_menu = QHBoxLayout()
+
+        # Кнопка "Объединить"
         merge_button = QPushButton()
-        merge_button.setIcon(QIcon(icon_path_merge_cells))
-        merge_button.setIconSize(QSize(24, 24))  # Устанавливаем размер иконки
+        merge_button.setIcon(QIcon(os.path.join(current_dir, "..", "icons", "merge_cells.png")))
+        merge_button.setIconSize(QSize(24, 24))
         merge_button.setFixedSize(24, 24)
         merge_button.clicked.connect(self.handle_merge_cells)
-        secondary_left_menu_layout.addWidget(merge_button)
+        lower_menu.addWidget(merge_button)
 
-        bold_button = QPushButton()
-        icon_bold_text = os.path.join(current_dir, "..", "icons", "icon_bold_text.png")
-        bold_button.setIcon(QIcon(icon_bold_text))
-        bold_button.setIconSize(QSize(24, 24))
-        bold_button.setFixedSize(24, 24)
-        bold_button.clicked.connect(lambda: TemplateTableService.toggle_bold(self.table))
-        secondary_left_menu_layout.addWidget(bold_button)
+        #Выделенный текст
+        bold_button = self.create_icon_button("icon_bold_text.png",
+                                              lambda: TemplateTableService.toggle_bold(self.table))
+        lower_menu.addWidget(bold_button)
 
-        italic_button = QPushButton()
-        icon_italic_text = os.path.join(current_dir, "..", "icons", "icon_italic_text.png")
-        italic_button.setIcon(QIcon(icon_italic_text))
-        italic_button.setIconSize(QSize(24, 24))
-        italic_button.setFixedSize(24, 24)
-        italic_button.clicked.connect(lambda: TemplateTableService.toggle_italic(self.table))
-        secondary_left_menu_layout.addWidget(italic_button)
+        #наклон текста
+        italic_button = self.create_icon_button("icon_italic_text.png",
+                                              lambda: TemplateTableService.toggle_italic(self.table))
+        lower_menu.addWidget(italic_button)
 
-        underline_button = QPushButton()
-        icon_underline_text = os.path.join(current_dir, "..", "icons", "icon_underline_text.png")
-        underline_button.setIcon(QIcon(icon_underline_text))
-        underline_button.setIconSize(QSize(24, 24))
-        underline_button.setFixedSize(24, 24)
-        underline_button.clicked.connect(lambda: TemplateTableService.toggle_underline(self.table))
-        secondary_left_menu_layout.addWidget(underline_button)
+        #подчеркивание
+        underline_button = self.create_icon_button("icon_underline_text.png",
+                                                lambda: TemplateTableService.toggle_underline(self.table))
+        lower_menu.addWidget(underline_button)
 
-        text_color = QPushButton()
-        icon_text_color = os.path.join(current_dir, "..", "icons", "icon_color_text.png")
-        text_color.setIcon(QIcon(icon_text_color))
-        text_color.setIconSize(QSize(24, 24))
-        text_color.setFixedSize(24, 24)
-        text_color.clicked.connect(lambda: self.change_text_color())
-        secondary_left_menu_layout.addWidget(text_color)
+        #цвет текста
+        text_color = self.create_icon_button("icon_color_text.png", lambda: self.change_text_color())
+        lower_menu.addWidget(text_color)
 
-        cell_color = QPushButton()
-        icon_cell_color = os.path.join(current_dir, "..", "icons", "icon_color_cell.png")
-        cell_color.setIcon(QIcon(icon_cell_color))
-        cell_color.setIconSize(QSize(24, 24))
-        cell_color.setFixedSize(24, 24)
-        cell_color.clicked.connect(lambda: self.change_cell_color())
-        secondary_left_menu_layout.addWidget(cell_color)
+        #цвет ячейки
+        cell_color = self.create_icon_button("icon_color_cell.png", lambda:  self.change_cell_color())
+        lower_menu.addWidget(cell_color)
 
-        template_background_color = QPushButton()
-        icon_background_color = os.path.join(current_dir, "..", "icons", "icon_background.png")
-        template_background_color.setIcon(QIcon(icon_background_color))
-        template_background_color.setIconSize(QSize(24, 24))
-        template_background_color.setFixedSize(24, 24)
-        template_background_color.clicked.connect(lambda: self.change_template_background_color())
-        secondary_left_menu_layout.addWidget(template_background_color)
+        #цвет фона
+        template_background_color = self.create_icon_button("icon_background.png",
+                                                            lambda: self.change_template_background_color())
+        lower_menu.addWidget(template_background_color)
 
-        increase_decimal = QPushButton()
-        icon_increase_decimal = os.path.join(current_dir, "..", "icons", "icon_increase_decimal.png")
-        increase_decimal.setIcon(QIcon(icon_increase_decimal))
-        increase_decimal.setIconSize(QSize(24, 24))
-        increase_decimal.setFixedSize(24, 24)
-        increase_decimal.clicked.connect(lambda: TemplateTableService.change_decimal_places(self.table, increase=True))
-        secondary_left_menu_layout.addWidget(increase_decimal)
+        #Увеличить значение после запятой
+        increase_decimal = self.create_icon_button("icon_increase_decimal.png",
+                                        lambda: TemplateTableService.change_decimal_places(self.table, increase=True))
+        lower_menu.addWidget(increase_decimal)
 
-        decrease_decimal = QPushButton()
-        icon_decrease_decimal = os.path.join(current_dir, "..", "icons", "icon_decrease_decimal.png")
-        decrease_decimal.setIcon(QIcon(icon_decrease_decimal))
-        decrease_decimal.setIconSize(QSize(24, 24))
-        decrease_decimal.setFixedSize(24, 24)
-        decrease_decimal.clicked.connect(lambda: TemplateTableService.change_decimal_places(self.table, increase=False))
-        secondary_left_menu_layout.addWidget(decrease_decimal)
+        #Уменьшить значение после запятой
+        decrease_decimal = self.create_icon_button("icon_increase_decimal.png",
+                                    lambda: TemplateTableService.change_decimal_places(self.table, increase=False))
+        lower_menu.addWidget(decrease_decimal)
+
+        #Выбор шрифта
+        self.font_combo_box = QFontComboBox()
+        self.font_combo_box.setFixedWidth(150)
+        self.font_combo_box.currentFontChanged.connect(self.change_font)
+        lower_menu.addWidget(self.font_combo_box)
 
         # Добавляем выпадающий список для выбора размера шрифта
         font_size_combo_box = QComboBox()
@@ -152,84 +157,74 @@ class TemplateConstructorWindow(QWidget):
         font_size_combo_box.addItems([str(size) for size in range(8, 73, 2)])  # Размеры шрифтов от 8 до 72 с шагом 2
         font_size_combo_box.currentTextChanged.connect(
             lambda size: TemplateTableService.change_font_size(self.table, int(size)))
-        secondary_left_menu_layout.addWidget(font_size_combo_box)
+        lower_menu.addWidget(font_size_combo_box)
 
         # Поле для ввода количества строк
         row_input = QLineEdit()
         row_input.setFixedWidth(30)  # Устанавливаем ширину поля
         row_input.setValidator(QtGui.QIntValidator(1, 99))  # Ограничиваем ввод только числами от 1 до 1000
-        secondary_left_menu_layout.addWidget(row_input)
+        lower_menu.addWidget(row_input)
 
         # Поле для ввода количества столбцов
         column_input = QLineEdit()
         column_input.setFixedWidth(30)
         column_input.setValidator(QtGui.QIntValidator(1, 99))
-        secondary_left_menu_layout.addWidget(column_input)
+        lower_menu.addWidget(column_input)
 
-        # Кнопка для применения изменений
-        resize_button = QPushButton()
-        icon_resize = os.path.join(current_dir, "..", "icons", "icon_resize.png")
-        resize_button.setIcon(QIcon(icon_resize))
-        resize_button.setIconSize(QSize(24, 24))
-        resize_button.setFixedSize(24, 24)
-        resize_button.clicked.connect(
-            lambda: TemplateTableService.resize_table(
-                self.table,
-                int(row_input.text()),
-                int(column_input.text()),
-                self.background_color  # Передаём сохранённый цвет фона
-            )
-        )
-        secondary_left_menu_layout.addWidget(resize_button)
+        #Кнопка применить изменения размера
+        resize_button = self.create_icon_button("icon_check.png",
+                                            lambda: TemplateTableService.resize_table(self.table,
+                                            int(row_input.text()), int(column_input.text()), self.background_color))
+        lower_menu.addWidget(resize_button)
 
-        # Выбо формат текста
-        self.font_combo_box = QFontComboBox()
-        self.font_combo_box.setFixedWidth(150)
-        self.font_combo_box.currentFontChanged.connect(self.change_font)
-        secondary_left_menu_layout.addWidget(self.font_combo_box)
+        download_file = self.create_icon_button("icon_download.png",
+                                            lambda: TemplateTableService().export_to_excel(self.table))
+        lower_menu.addWidget(download_file)
 
-        save_button = QPushButton()
-        icon_cell_color = os.path.join(current_dir, "..", "icons", "icon_save.png")
-        save_button.setIcon(QIcon(icon_cell_color))
-        save_button.setIconSize(QSize(24, 24))
-        save_button.setFixedSize(24, 24)
-        save_button.clicked.connect(self.template_save_requested.emit)
-        secondary_right_menu_layout.addWidget(save_button)
+        save_button = self.create_icon_button("icon_save.png", self.template_save_requested.emit)
+        lower_menu.addWidget(save_button)
 
-        delete_button = QPushButton()
-        icon_cell_color = os.path.join(current_dir, "..", "icons", "icon_delete.png")
-        delete_button.setIcon(QIcon(icon_cell_color))
-        delete_button.setIconSize(QSize(24, 24))
-        delete_button.setFixedSize(24, 24)
-        delete_button.clicked.connect(self.delete_template)
-        secondary_right_menu_layout.addWidget(delete_button)
+        delete_button = self.create_icon_button("icon_delete.png", self.delete_template)
+        lower_menu.addWidget(delete_button)
+        lower_menu.setSpacing(10)
 
-        # Таблица для отображения шаблона
-        self.table = QTableWidget(4, 4)
-        self.table.setHorizontalHeaderLabels([chr(65 + i) for i in range(10)])
-        self.table.setVerticalHeaderLabels([str(i + 1) for i in range(10)])
-        main_layout.addWidget(self.table)
+        return lower_menu
 
+    def create_table(self, layout):
+        """
+        Создает таблицу и добавляет её в лейаут.
+        """
+        self.table = QTableWidget(0, 0)
+        self.table.setHorizontalHeaderLabels([chr(65 + i) for i in range(4)])
+        self.table.setVerticalHeaderLabels([str(i + 1) for i in range(4)])
         self.table.itemChanged.connect(lambda item: self.handle_cell_change(item.row(), item.column()))
-        # Устанавливаем основной макет
-        self.setLayout(main_layout)
+        layout.addWidget(self.table)
 
-    # def open_create_template_window(self):
-    #     # Открытие окна создания нового шаблона
-    #     self.create_template_window = WindowCreatingNewTemplate(self)
-    #     self.create_template_window.settings_applied.connect(self.apply_settings_to_template)
-    #     self.create_template_window.show()
+    def create_icon_button(self, icon_name, callback):
+        """
+        Создает кнопку с иконкой.
+        """
+        button = QPushButton()
+        button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), "..", "icons", icon_name)))
+        button.setIconSize(QSize(24, 24))
+        button.setFixedSize(24, 24)
+        button.clicked.connect(callback)
+        return button
 
-    # def apply_settings_to_template(self, rows, cols, template_name, background_color):
-    #     # Применяем настройки
-    #     self.template_name = template_name
-    #     self.background_color = background_color  # Сохраняем цвет фона
-    #
-    #     self.update_table_structure(rows, cols, [chr(65 + i) for i in range(cols)])
-    #     self.update_background_color(background_color)
-    #
-    #     # Обновляем имя шаблона в метке
-    #     self.update_template_name(template_name)
+    # -------- Загрузка стилей --------
+    def load_styles(self):
+        """
+        Загружает стили из файла .qss.
+        """
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        style_file_path = os.path.join(current_dir, "..", "styles", "styles.qss")
+        file = QFile(style_file_path)
+        if file.open(QFile.ReadOnly | QFile.Text):
+            stylesheet = file.readAll().data().decode()
+            self.setStyleSheet(stylesheet)
+            print("Стили успешно загружены")
+        else:
+            print(f"Ошибка: не удалось открыть файл стилей по пути: {style_file_path}")
 
     def load_styles(self):
         """Загружает стили из файла .qss"""
