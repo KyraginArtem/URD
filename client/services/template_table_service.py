@@ -121,7 +121,7 @@ class TemplateTableService:
 
         # Печатаем собранные данные для отладки
         print("Собранные данные таблицы:", cell_data)
-        return json.dumps(cell_data)
+        return json.dumps(cell_data, ensure_ascii=False)
 
     @staticmethod
     def unmerge_cells(table, top_row, bottom_row, left_col, right_col):
@@ -486,6 +486,7 @@ class TemplateTableService:
     def change_decimal_places(table, increase=True):
         """Изменяет количество знаков после запятой для выбранных ячеек."""
         selected_ranges = table.selectedRanges()
+
 
         for selected_range in selected_ranges:
             for row in range(selected_range.topRow(), selected_range.bottomRow() + 1):

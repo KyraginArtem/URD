@@ -3,15 +3,18 @@ import datetime
 import json
 import zlib
 from server.models.template_db_model import TemplateDBModel
+from server.services.template_database_service import TemplateDatabaseService
+
 
 class ServerController:
     def __init__(self):
         self.template_db_model = TemplateDBModel()
+        self.service_db = TemplateDatabaseService()
 
     def send_response_to_client(self, client_socket, response_data):
         """Отправляет сжатый ответ клиенту."""
         try:
-            json_data = json.dumps(response_data).encode("utf-8")
+            json_data = json.dumps(response_data, ensure_ascii=False).encode("utf-8")
             compressed_data = zlib.compress(json_data)
             client_socket.sendall(compressed_data)
         except Exception as e:
@@ -47,6 +50,7 @@ class ServerController:
                     "CHECK_TEMPLATE_EXISTS": self.handle_check_template_exists,
                     "UPDATE_TEMPLATE": self.handle_update_template,
                     "DELETE_TEMPLATE": self.handle_delete_template,
+                    "PARSE_CELL": self.handle_parse_cell,
                 }
 
                 handler = handlers.get(request_type)
@@ -147,3 +151,54 @@ class ServerController:
         success = self.template_db_model.delete_template(template_name)
         response_data = {"status": "success"} if success else {"status": "failure"}
         self.send_response_to_client(client_socket, response_data)
+
+    def handle_parse_cell(self, client_socket, cell_data):
+        """
+        Обрабатывает запрос на парсинг данных в ячейках.
+        """
+        result = {
+            "cell_value": {}
+        }
+
+        # Проходим по каждой ячейке
+        for cell_name, cell_expression in cell_data["cell_value"].items():
+            # Используем сервис для обработки значения ячейки
+            parsed_result = self.service_db.handle_parse(cell_expression, cell_data["start_time"],
+                                                         cell_data["end_time"])
+
+            # Если результат — это словарь, извлекаем значение по ключу
+            if isinstance(parsed_result, dict):
+                # Переходим к первому значению словаря
+                key, value = next(iter(parsed_result.items()))
+                parsed_result = value
+
+                # Проверяем, является ли результат списком или одиночным значением
+            if isinstance(parsed_result, list):
+                if len(parsed_result) > 1:
+                    # Если это список с несколькими значениями
+                    result["cell_value"][cell_name] = {
+                        "type": "list",
+                        "value": parsed_result
+                    }
+                elif len(parsed_result) == 1:
+                    # Если это список с одним значением
+                    result["cell_value"][cell_name] = {
+                        "type": "single",
+                        "value": parsed_result[0]
+                    }
+                else:
+                    # Пустой список
+                    result["cell_value"][cell_name] = {
+                        "type": "single",
+                        "value": None
+                    }
+            else:
+                # Если результат — одиночное значение
+                result["cell_value"][cell_name] = {
+                    "type": "single",
+                    "value": parsed_result
+                }
+        # Формируем ответ
+        response_data = result if result["cell_value"] else {"status": "error", "message": "No data parsed"}
+        self.send_response_to_client(client_socket, response_data)
+

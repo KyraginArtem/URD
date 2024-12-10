@@ -1,13 +1,18 @@
+# client/views/template_constructor_window.py
 # ========== Импорты ==========
 import json
 import os
+from email.policy import strict
+
 from PySide6 import QtGui
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QComboBox, QPushButton, QTableWidget,
-    QHBoxLayout, QTableWidgetItem, QMessageBox, QFontComboBox, QColorDialog, QLineEdit
+    QHBoxLayout, QTableWidgetItem, QMessageBox, QFontComboBox, QColorDialog, QLineEdit, QDateEdit
 )
-from PySide6.QtCore import Qt, Signal, QFile, QSize
+from PySide6.QtCore import Qt, Signal, QFile, QSize, QDate
+from openpyxl.descriptors import DateTime
+
 from client.services.table_cell_parser import TableCellParser
 from client.services.template_table_service import TemplateTableService
 from client.views.window_creating_new_template import WindowCreatingNewTemplate
@@ -15,7 +20,8 @@ from client.views.window_creating_new_template import WindowCreatingNewTemplate
 # ========== Класс TemplateConstructorWindow ==========
 class TemplateConstructorWindow(QWidget):
     # -------- Сигналы --------
-    create_requested = Signal()  # Открытие окна настроек
+    create_report = Signal()
+    create_requested = Signal(str)  # Открытие окна создания нового шаблона
     template_selected = Signal(str)  # Выбор шаблона
     template_save_requested = Signal()  # Сохранение шаблона
     delete_template_signal = Signal(str)  # Удаление шаблона
@@ -33,6 +39,8 @@ class TemplateConstructorWindow(QWidget):
         self.controller = controller
 
         # Переменные интерфейса
+        self.start_date = None
+        self.end_date = None
         self.template_combo = None
         self.template_name = ""
         self.settings_window = None
@@ -50,7 +58,7 @@ class TemplateConstructorWindow(QWidget):
         Формирует весь интерфейс: панель, меню, таблицу.
         """
         # Основной лейаут
-        main_layout = QVBoxLayout()
+        main_layout = QVBoxLayout(self)
 
         # Создание и добавление частей интерфейса
         main_layout.addLayout(self.create_top_panel())  # Верхняя панель
@@ -79,12 +87,34 @@ class TemplateConstructorWindow(QWidget):
 
         # Кнопка для создания нового шаблона
         create_button = QPushButton("Создать шаблон")
-        create_button.clicked.connect(self.create_requested)
+        create_button.clicked.connect(lambda: self.create_requested.emit(self.template_name))
         layout.addWidget(create_button)
 
         # Метка имени шаблона
         self.template_name_label = QLabel("Шаблон: Не выбран")
         layout.addWidget(self.template_name_label)
+
+        # Поля для выбора даты
+        self.start_date = QDateEdit()
+        self.start_date.setCalendarPopup(True)  # Показываем календарь
+        self.start_date.setDisplayFormat("dd.MM.yyyy")  # Формат отображения даты
+        self.start_date.setDate(QDate(2024, 1, 1))
+        #self.start_date.setDate(QDate.currentDate().addDays(-7))  # Устанавливаем начальную дату по умолчанию
+        layout.addWidget(QLabel("С даты:"))
+        layout.addWidget(self.start_date)
+
+        self.end_date = QDateEdit()
+        self.end_date.setCalendarPopup(True)
+        self.end_date.setDisplayFormat("dd.MM.yyyy")
+        # self.end_date.setDate(QDate.currentDate())  # Устанавливаем текущую дату по умолчанию
+        self.end_date.setDate(QDate(2024, 1, 10))
+        layout.addWidget(QLabel("По дату:"))
+        layout.addWidget(self.end_date)
+
+        # Кнопка для формирования отчета
+        generate_report_button = QPushButton("Сформировать отчет")
+        generate_report_button.clicked.connect(self.create_report)  # Подключаем обработчик кнопки
+        layout.addWidget(generate_report_button)
 
         # Метка имени администратора
         admin_label = QLabel(self.admin_name)
@@ -197,7 +227,7 @@ class TemplateConstructorWindow(QWidget):
         self.table = QTableWidget(0, 0)
         self.table.setHorizontalHeaderLabels([chr(65 + i) for i in range(4)])
         self.table.setVerticalHeaderLabels([str(i + 1) for i in range(4)])
-        self.table.itemChanged.connect(lambda item: self.handle_cell_change(item.row(), item.column()))
+        # self.table.itemChanged.connect(lambda item: self.handle_cell_change(item.row(), item.column()))
         layout.addWidget(self.table)
 
     def create_icon_button(self, icon_name, callback):
@@ -365,25 +395,25 @@ class TemplateConstructorWindow(QWidget):
         self.background_color = color  # Сохраняем цвет в переменную
         self.table.setStyleSheet(f"background-color: {color};")
 
-    def handle_cell_change(self, row, col):
-        """
-        Обрабатывает изменение значения в ячейке. Если текст начинается с '=', выполняется парсинг формулы.
-        """
-        item = self.table.item(row, col)
-        if not item:
-            return
-
-        text = item.text().strip()
-        if text.startswith("="):
-            try:
-                result = TableCellParser.parse_formula(text, self.table)
-                # Сохраняем результат в ячейку
-                item.setText(str(result))
-
-                # Сохраняем формулу в Qt.UserRole для восстановления
-                cell_data_str = item.data(Qt.UserRole)
-                cell_data = json.loads(cell_data_str) if cell_data_str else {}
-                cell_data["formula"] = text
-                item.setData(Qt.UserRole, json.dumps(cell_data))
-            except ValueError as e:
-                QMessageBox.warning(self, "Ошибка формулы", str(e))
+    # def handle_cell_change(self, row, col):
+    #     """
+    #     Обрабатывает изменение значения в ячейке. Если текст начинается с '=', выполняется парсинг формулы.
+    #     """
+    #     item = self.table.item(row, col)
+    #     if not item:
+    #         return
+    #
+    #     text = item.text().strip()
+    #     if text.startswith("="):
+    #         try:
+    #             result = TableCellParser.parse_formula(text, self.table)
+    #             # Сохраняем результат в ячейку
+    #             item.setText(str(result))
+    #
+    #             # Сохраняем формулу в Qt.UserRole для восстановления
+    #             cell_data_str = item.data(Qt.UserRole)
+    #             cell_data = json.loads(cell_data_str) if cell_data_str else {}
+    #             cell_data["formula"] = text
+    #             item.setData(Qt.UserRole, json.dumps(cell_data))
+    #         except ValueError as e:
+    #             QMessageBox.warning(self, "Ошибка формулы", str(e))

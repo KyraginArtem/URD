@@ -10,7 +10,7 @@ class TemplateDBModel:
             server='localhost',
             database='DB_URD',
             as_dict=True,
-            charset='utf8'
+            charset="utf8"
         )
 
     def get_user_by_credentials(self, username, password):
