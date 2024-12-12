@@ -84,15 +84,12 @@ class ClientController:
 
         #Извлекаем значения
         cells = json.loads(cell_data)
-        all_value_cell = [value['value'] for value in cells]
-
         #отправляем данные шаблона для расшифровки
         parse_date = {
             "cell_value" : {},
             "start_time" : start_date_value,
             "end_time" : end_date_value
         }
-
         # Ищем ячейки, которые начинаются с "="
         for cell in cells:
             cell_value = cell['value']
@@ -100,24 +97,25 @@ class ClientController:
                 cell_name = cell['cell_name']  # Имя ячейки, например "A1"
                 parse_date["cell_value"][cell_name] = cell_value
 
-        # Логируем данные для проверки
-        print("Данные для парсинга:", json.dumps(parse_date, indent=4, ensure_ascii=False))
+        if len(parse_date["cell_value"]) > 0:
+            # Логируем данные для проверки
+            print("Данные для парсинга:", json.dumps(parse_date, indent=4, ensure_ascii=False))
+            request_data = {
+                "type": "PARSE_CELL",
+                "data": parse_date
+            }
 
-        request_data = {
-            "type": "PARSE_CELL",
-            "data": parse_date
-        }
-        response = self.send_request_to_server(request_data)
+            response = self.send_request_to_server(request_data)
 
-        # Логируем ответ для проверки
-        print("Ответ сервера:", json.dumps(response, indent=4, ensure_ascii=False))
+            # Логируем ответ для проверки
+            print("Ответ сервера:", json.dumps(response, indent=4, ensure_ascii=False))
 
-        # Объединяем данные
-        for cell in cells:
-            cell_name = cell["cell_name"]
-            if cell_name in response["cell_value"]:
-                # Заменяем значение ячейки на данные из ответа
-                cell.update(response["cell_value"][cell_name])
+            # Объединяем данные
+            for cell in cells:
+                cell_name = cell["cell_name"]
+                if cell_name in response["cell_value"]:
+                    # Заменяем значение ячейки на данные из ответа
+                    cell.update(response["cell_value"][cell_name])
 
         # Передаем данные в представление
         template_data = {

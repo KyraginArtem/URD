@@ -5,18 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="dea0fc47-1b46-438a-8fef-6a87b28abd10" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/server/models/report_db_model.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/server/test_service.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/controllers/client_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/controllers/client_controller.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/services/template_table_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/services/template_table_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/views/access_settings_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/access_settings_window.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/views/report_generation_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/report_generation_window.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/views/template_constructor_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/template_constructor_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/controllers/server_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/controllers/server_controller.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/models/template_db_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/models/template_db_model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/services/template_database_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/services/template_database_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -143,7 +136,7 @@
         </line-breakpoint>
         <line-breakpoint type="python-line">
           <url>file://$PROJECT_DIR$/client/views/template_constructor_window.py</url>
-          <line>355</line>
+          <line>392</line>
           <option name="timeStamp" value="114" />
         </line-breakpoint>
         <line-breakpoint type="python-line">
@@ -153,7 +146,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/client/services/template_table_service.py</url>
-          <line>665</line>
+          <line>724</line>
           <option name="timeStamp" value="148" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
@@ -188,7 +181,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/client/views/report_generation_window.py</url>
-          <line>148</line>
+          <line>152</line>
           <option name="timeStamp" value="240" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
@@ -198,13 +191,18 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/client/controllers/client_controller.py</url>
-          <line>122</line>
+          <line>120</line>
           <option name="timeStamp" value="243" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/client/controllers/client_controller.py</url>
-          <line>131</line>
+          <line>129</line>
           <option name="timeStamp" value="244" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/client/views/template_constructor_window.py</url>
+          <line>468</line>
+          <option name="timeStamp" value="247" />
         </line-breakpoint>
       </breakpoints>
       <breakpoints-defaults>

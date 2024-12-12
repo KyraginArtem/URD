@@ -97,6 +97,10 @@ class ReportWindow(QWidget):
         # Устанавливаем фон таблицы
         self.table.setStyleSheet(f"background-color: {self.template_data['background_color']}")
 
+        # Устанавливаем буквенные заголовки столбцов
+        header_labels = [TemplateTableService.generate_col_name(i) for i in range(self.table.columnCount())]
+        self.table.setHorizontalHeaderLabels(header_labels)
+
         # Перебираем данные ячеек
         for cell_info in self.template_data["cell_data"]:
             # Получаем позицию ячейки

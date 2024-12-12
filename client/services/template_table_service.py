@@ -273,7 +273,7 @@ class TemplateTableService:
             font.setUnderline(True)
             item.setFont(font)
 
-        # Жирный текста
+        # Жирный текст
         if config.get("bold"):
             font = item.font()
             font.setBold(True)
@@ -285,6 +285,18 @@ class TemplateTableService:
             font = item.font()
             font.setPointSize(text_size)
             item.setFont(font)
+
+        # Применение форматирования чисел, если указано
+        format_decimals = config.get("format")
+        if format_decimals is not None:
+            try:
+                # Преобразуем текст в число и форматируем
+                numeric_value = float(item.text())
+                formatted_value = f"{numeric_value:.{format_decimals}f}"
+                item.setText(formatted_value)
+            except ValueError:
+                # Если значение не является числом, оставляем текст без изменений
+                pass
 
         # Высота и ширина ячейки
         height = config.get("height")
@@ -301,6 +313,9 @@ class TemplateTableService:
         else:
             table.setColumnWidth(col_index, 100)  # Дефолтное значение ширины столбца
 
+        # Выравнивание текста (добавлено)
+        alignment = config.get("alignment", Qt.AlignLeft)
+        item.setTextAlignment(alignment)
 
     @staticmethod
     def apply_merged_cells(table, merged_cells):
@@ -482,11 +497,54 @@ class TemplateTableService:
                     cell_data['background_color'] = color
                     item.setData(Qt.UserRole, json.dumps(cell_data))
 
+    # @staticmethod
+    # def change_decimal_places(table, increase=True):
+    #     """Изменяет количество знаков после запятой для выбранных ячеек."""
+    #     selected_ranges = table.selectedRanges()
+    #
+    #
+    #     for selected_range in selected_ranges:
+    #         for row in range(selected_range.topRow(), selected_range.bottomRow() + 1):
+    #             for col in range(selected_range.leftColumn(), selected_range.rightColumn() + 1):
+    #                 item = table.item(row, col)
+    #                 if item is None:
+    #                     item = QTableWidgetItem()
+    #                     table.setItem(row, col, item)
+    #
+    #                 # Получаем текущую конфигурацию ячейки
+    #                 cell_data_str = item.data(Qt.UserRole)
+    #                 if cell_data_str:
+    #                     cell_config = json.loads(cell_data_str)
+    #                 else:
+    #                     cell_config = {}
+    #
+    #                 # Изменяем количество знаков после запятой
+    #                 current_format = cell_config.get("format", 0)
+    #                 if current_format is None:
+    #                     current_format = 0
+    #                 if increase:
+    #                     current_format += 1
+    #                 else:
+    #                     current_format = max(0, current_format - 1)
+    #
+    #                 # Сохраняем изменённый формат
+    #                 cell_config["format"] = current_format
+    #                 item.setData(Qt.UserRole, json.dumps(cell_config))
+    #
+    #                 # Если значение в ячейке является числом, обновляем отображение
+    #                 value = item.text()
+    #                 try:
+    #                     numeric_value = float(value)
+    #                     formatted_value = f"{numeric_value:.{current_format}f}"
+    #                     item.setText(formatted_value)
+    #                 except ValueError:
+    #                     # Если значение не число, оставляем текст как есть
+    #                     pass
+
     @staticmethod
     def change_decimal_places(table, increase=True):
         """Изменяет количество знаков после запятой для выбранных ячеек."""
         selected_ranges = table.selectedRanges()
-
 
         for selected_range in selected_ranges:
             for row in range(selected_range.topRow(), selected_range.bottomRow() + 1):
@@ -525,6 +583,7 @@ class TemplateTableService:
                     except ValueError:
                         # Если значение не число, оставляем текст как есть
                         pass
+
 
     @staticmethod
     def change_font_size(table, font_size):

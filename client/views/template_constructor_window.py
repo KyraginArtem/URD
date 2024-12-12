@@ -30,6 +30,7 @@ class TemplateConstructorWindow(QWidget):
     # -------- Инициализация --------
     def __init__(self, admin_name, template_names, controller):
         super().__init__()
+        self.decimal_display = None
         self.setWindowTitle("Редактор шаблонов")
         self.resize(1000, 700)
 
@@ -165,15 +166,49 @@ class TemplateConstructorWindow(QWidget):
                                                             lambda: self.change_template_background_color())
         lower_menu.addWidget(template_background_color)
 
-        #Увеличить значение после запятой
-        increase_decimal = self.create_icon_button("icon_increase_decimal.png",
-                                        lambda: TemplateTableService.change_decimal_places(self.table, increase=True))
+        # Кнопка для увеличения количества знаков после запятой
+        increase_decimal = self.create_icon_button(
+            "icon_increase_decimal.png",
+            lambda: self.handle_decimal_change(increase=True)
+        )
         lower_menu.addWidget(increase_decimal)
 
-        #Уменьшить значение после запятой
-        decrease_decimal = self.create_icon_button("icon_increase_decimal.png",
-                                    lambda: TemplateTableService.change_decimal_places(self.table, increase=False))
+        # Кнопка для уменьшения количества знаков после запятой
+        decrease_decimal = self.create_icon_button(
+            "icon_decrease_decimal.png",
+            lambda: self.handle_decimal_change(increase=False)
+        )
         lower_menu.addWidget(decrease_decimal)
+
+        # Поле для отображения текущего количества знаков после запятой
+        self.decimal_display = QLineEdit()
+        self.decimal_display.setFixedSize(38, 24)
+        self.decimal_display.setReadOnly(True)  # Делаем поле некликабельным
+        self.decimal_display.setAlignment(Qt.AlignCenter)
+        lower_menu.addWidget(self.decimal_display)
+
+        #Сдвиг
+        #----------------------------------
+        # В лево
+        shift_left_button = self.create_icon_button("free-icon-arrow-left.png",
+                                                    lambda: self.shift_selection("left"))
+        lower_menu.addWidget(shift_left_button)
+
+        # В право
+        shift_right_button = self.create_icon_button("free-icon-arrow-right.png",
+                                                     lambda: self.shift_selection("right"))
+        lower_menu.addWidget(shift_right_button)
+
+        # В верх
+        shift_up_button = self.create_icon_button("free-icon-arrow-up.png",
+                                                  lambda: self.shift_selection("up"))
+        lower_menu.addWidget(shift_up_button)
+
+        # В низ
+        shift_down_button = self.create_icon_button("free-icon-arrow-down.png",
+                                                    lambda: self.shift_selection("down"))
+        lower_menu.addWidget(shift_down_button)
+        #----------------------------------
 
         #Выбор шрифта
         self.font_combo_box = QFontComboBox()
@@ -229,6 +264,8 @@ class TemplateConstructorWindow(QWidget):
         self.table.setVerticalHeaderLabels([str(i + 1) for i in range(4)])
         # self.table.itemChanged.connect(lambda item: self.handle_cell_change(item.row(), item.column()))
         layout.addWidget(self.table)
+
+        #self.table.itemSelectionChanged.connect(self.update_decimal_display)
 
     def create_icon_button(self, icon_name, callback):
         """
@@ -395,25 +432,152 @@ class TemplateConstructorWindow(QWidget):
         self.background_color = color  # Сохраняем цвет в переменную
         self.table.setStyleSheet(f"background-color: {color};")
 
-    # def handle_cell_change(self, row, col):
-    #     """
-    #     Обрабатывает изменение значения в ячейке. Если текст начинается с '=', выполняется парсинг формулы.
-    #     """
-    #     item = self.table.item(row, col)
-    #     if not item:
-    #         return
-    #
-    #     text = item.text().strip()
-    #     if text.startswith("="):
-    #         try:
-    #             result = TableCellParser.parse_formula(text, self.table)
-    #             # Сохраняем результат в ячейку
-    #             item.setText(str(result))
-    #
-    #             # Сохраняем формулу в Qt.UserRole для восстановления
-    #             cell_data_str = item.data(Qt.UserRole)
-    #             cell_data = json.loads(cell_data_str) if cell_data_str else {}
-    #             cell_data["formula"] = text
-    #             item.setData(Qt.UserRole, json.dumps(cell_data))
-    #         except ValueError as e:
-    #             QMessageBox.warning(self, "Ошибка формулы", str(e))
+    def handle_decimal_change(self, increase):
+        """
+        Изменяет количество знаков после запятой и обновляет отображение.
+        """
+        TemplateTableService.change_decimal_places(self.table, increase)
+        self.update_decimal_display()
+
+    def update_decimal_display(self):
+        """Обновляет отображение текущего количества знаков после запятой."""
+        selected_ranges = self.table.selectedRanges()
+        if not selected_ranges:
+            self.decimal_display.setText("")
+            return
+
+        # Берем первую выделенную ячейку
+        selected_range = selected_ranges[0]
+        row, col = selected_range.topRow(), selected_range.leftColumn()
+        item = self.table.item(row, col)
+        if item is None:
+            self.decimal_display.setText("0")
+            return
+
+        # Получаем текущий формат из конфигурации
+        cell_data_str = item.data(Qt.UserRole)
+        if cell_data_str:
+            cell_config = json.loads(cell_data_str)
+            current_format = cell_config.get("format", 0)
+        else:
+            current_format = 0
+
+        self.decimal_display.setText(str(current_format))
+
+    def shift_selection(self, direction):
+        """Сдвигает выделенные ячейки в указанном направлении."""
+        selected_ranges = self.table.selectedRanges()
+        if not selected_ranges:
+            return
+
+        for selected_range in selected_ranges:
+            top_row, bottom_row = selected_range.topRow(), selected_range.bottomRow()
+            left_col, right_col = selected_range.leftColumn(), selected_range.rightColumn()
+
+            # Сохраняем исходные данные и конфигурации ячеек
+            original_data = []
+            for row in range(top_row, bottom_row + 1):
+                row_data = []
+                for col in range(left_col, right_col + 1):
+                    item = self.table.item(row, col)
+                    row_data.append({
+                        "value": item.text() if item else "",
+                        "config": json.loads(item.data(Qt.UserRole)) if item and item.data(Qt.UserRole) else {}
+                    })
+                original_data.append(row_data)
+
+            # Переносим данные из соседней области в область выделения
+            if direction == "left":
+                for row in range(top_row, bottom_row + 1):
+                    for col in range(left_col, right_col + 1):
+                        source_col = col - 1
+                        if source_col >= 0:
+                            self.copy_cell_data(row, col, row, source_col)
+                        else:
+                            self.clear_cell(row, col)
+            elif direction == "right":
+                for row in range(top_row, bottom_row + 1):
+                    for col in range(right_col, left_col - 1, -1):
+                        source_col = col + 1
+                        if source_col < self.table.columnCount():
+                            self.copy_cell_data(row, col, row, source_col)
+                        else:
+                            self.clear_cell(row, col)
+            elif direction == "up":
+                for col in range(left_col, right_col + 1):
+                    for row in range(top_row, bottom_row + 1):
+                        source_row = row - 1
+                        if source_row >= 0:
+                            self.copy_cell_data(row, col, source_row, col)
+                        else:
+                            self.clear_cell(row, col)
+            elif direction == "down":
+                for col in range(left_col, right_col + 1):
+                    for row in range(bottom_row, top_row - 1, -1):
+                        source_row = row + 1
+                        if source_row < self.table.rowCount():
+                            self.copy_cell_data(row, col, source_row, col)
+                        else:
+                            self.clear_cell(row, col)
+
+            # Переносим исходные данные в новое место и восстанавливаем конфигурации
+            for r, row_data in enumerate(original_data):
+                for c, cell_data in enumerate(row_data):
+                    target_row = top_row + r
+                    target_col = left_col + c
+                    if direction == "left":
+                        target_col -= 1
+                    elif direction == "right":
+                        target_col += 1
+                    elif direction == "up":
+                        target_row -= 1
+                    elif direction == "down":
+                        target_row += 1
+
+                    if 0 <= target_row < self.table.rowCount() and 0 <= target_col < self.table.columnCount():
+                        # Создаём ячейку и задаём значение
+                        item = QTableWidgetItem(cell_data["value"])
+                        self.table.setItem(target_row, target_col, item)
+
+                        # Применяем конфигурации
+                        if cell_data["config"]:
+                            TemplateTableService.apply_cell_configuration(
+                                item, self.table, target_row, target_col, cell_data["config"]
+                            )
+                            # Сохраняем конфигурацию в Qt.UserRole
+                            item.setData(Qt.UserRole, json.dumps(cell_data["config"]))
+
+                        # Применяем центровку текста
+                        item.setTextAlignment(Qt.AlignCenter)
+
+    def copy_cell_data(self, target_row, target_col, source_row, source_col):
+        """Копирует все данные и конфигурации из одной ячейки в другую."""
+        source_item = self.table.item(source_row, source_col)
+        if source_item:
+            # Создаём копию текста и данных ячейки
+            target_item = QTableWidgetItem(source_item.text())
+            target_item.setData(Qt.UserRole, source_item.data(Qt.UserRole))
+
+            # Копируем выравнивание текста
+            target_item.setTextAlignment(source_item.textAlignment())
+
+            # Копируем фон ячейки
+            target_item.setBackground(source_item.background())
+
+            # Копируем шрифт
+            target_item.setFont(source_item.font())
+
+            # Копируем цвет текста
+            target_item.setForeground(source_item.foreground())
+        else:
+            # Если ячейка пуста, создаём новую
+            target_item = QTableWidgetItem("")
+
+        # Устанавливаем скопированную ячейку на целевую позицию
+        self.table.setItem(target_row, target_col, target_item)
+
+    def clear_cell(self, row, col):
+        """Очищает содержимое ячейки."""
+        self.table.setItem(row, col, QTableWidgetItem(""))
+
+
