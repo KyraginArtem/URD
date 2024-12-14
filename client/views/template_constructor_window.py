@@ -21,6 +21,7 @@ from client.views.window_creating_new_template import WindowCreatingNewTemplate
 class TemplateConstructorWindow(QWidget):
     # -------- Сигналы --------
     create_report = Signal()
+    open_access_window = Signal()
     create_requested = Signal(str)  # Открытие окна создания нового шаблона
     template_selected = Signal(str)  # Выбор шаблона
     template_save_requested = Signal()  # Сохранение шаблона
@@ -116,6 +117,11 @@ class TemplateConstructorWindow(QWidget):
         generate_report_button = QPushButton("Сформировать отчет")
         generate_report_button.clicked.connect(self.create_report)  # Подключаем обработчик кнопки
         layout.addWidget(generate_report_button)
+
+        # Кнопка для формирования окна настроек доступа
+        access_settings = QPushButton("Настроить доступ")
+        access_settings.clicked.connect(self.open_access_window.emit)  # Подключаем обработчик кнопки
+        layout.addWidget(access_settings)
 
         # Метка имени администратора
         admin_label = QLabel(self.admin_name)

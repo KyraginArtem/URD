@@ -3,16 +3,19 @@ import json
 import socket
 import zlib
 
-from PySide6.QtWidgets import QApplication, QMessageBox, QTableWidgetItem
+from PySide6.QtCore import Qt, QDate
+from PySide6.QtWidgets import QApplication, QMessageBox
 
+from client.views.access_settings_window import AccessSettingsWindow
 from client.views.report_generation_window import ReportWindow
-from client.views.user_authorization_window import LoginWindow
 from client.views.template_constructor_window import TemplateConstructorWindow
+from client.views.user_authorization_window import LoginWindow
 from client.views.window_creating_new_template import WindowCreatingNewTemplate
 from client.services.template_table_service import TemplateTableService
 
 class ClientController:
     creating_window = None
+    access_window = None
 
     def __init__(self):
         self.app = QApplication([])
@@ -64,7 +67,79 @@ class ClientController:
         self.template_constructor_view.template_save_requested.connect(self.handle_save_template)
         self.template_constructor_view.template_update.connect(self.update_template_data_in_db)
         self.template_constructor_view.delete_template_signal.connect(self.delete_template_in_db)
+        self.template_constructor_view.open_access_window.connect(self.open_access_window)
         self.template_constructor_view.show()
+
+    def open_access_window(self):
+        template_names = self.get_template_names_in_db()
+        users_names = self.get_users_names_in_db()
+        self.access_window = AccessSettingsWindow(template_names = template_names,
+                                                            users_names = users_names, controller = self)
+        self.access_window.load_data(users_names, template_names)
+        self.access_window.show()
+
+    def get_accessible_templates_for_user_in_db(self, user_name):
+        request_data = {
+            "type": "GET_ACCESSIBLE_TEMPLATE_NAMES",
+            "data": user_name
+        }
+        response = ClientController.send_request_to_server(request_data)
+        if response and response.get("status") == "success":
+            template_names = response.get("users_names", [])
+            return template_names
+        else:
+            return []
+
+    def update_accessible_templates_for_user(self, template_mame, user_name):
+        change_data = {
+            "template_name" : template_mame,
+            "user_name" : user_name
+        }
+
+        request_data = {
+            "type": "UPDATE_ACCESSIBLE_TEMPLATE_NAMES",
+            "data": change_data
+        }
+        response = ClientController.send_request_to_server(request_data)
+        if response and response.get("status") == "success":
+            # Всплывающее сообщение об успехе
+            QMessageBox.information(None, "Успех", "Доступные шаблоны успешно обновлены.")
+        else:
+            # Всплывающее сообщение об ошибке
+            QMessageBox.critical(None, "Ошибка", "Произошла ошибка. Данные не обновлены.")
+
+    def open_report_window(self, user_name):
+        # Получаем текущую дату для начала и конца
+        current_date = QDate.currentDate().toString(Qt.ISODate)
+
+        # Получаем доступные шаблоны для пользователя
+        template_names = self.get_accessible_templates_for_user_in_db(user_name)
+
+        # Создаем пустые данные для шаблона
+        template_data = {
+            "rows": 0,  # Пустая таблица
+            "cols": 0,
+            "cell_data": [],  # Без данных
+            "background_color": "#FFFFFF"  # Цвет фона по умолчанию
+        }
+
+        # Создаем окно ReportWindow
+        self.report_window = ReportWindow(
+            template_data=template_data,
+            start_date=current_date,
+            end_date=current_date,
+            template_name=template_names,
+            user_name=user_name
+        )
+
+        self.report_window.create_report.connect(self.handle_report_request)
+        self.report_window.show()
+
+    def handle_report_request(self, template_name, start_date, end_date):
+        """
+        Обрабатывает запрос на создание отчета.
+        """
+        print(f"Создание отчета: шаблон={template_name}, с даты={start_date}, по дату={end_date}")
 
     #Создание окна Рапот
     def handle_report_window(self):
@@ -127,8 +202,17 @@ class ClientController:
 
         processed_template_data = self.process_template_data(template_data)
 
-        self.report_window = ReportWindow(processed_template_data, start_date_value, end_date_value, template_name, user_name)
+        name = []
+        template_name = {
+            "name" : template_name
+        }
+        name.append(template_name)
+
+        self.report_window = ReportWindow(processed_template_data, start_date_value, end_date_value, name, user_name)
         self.report_window.show()
+
+    # def create_report(self, template_name):
+    #     print(template_name)
 
     def process_template_data(self, template_data):
         """
@@ -261,6 +345,17 @@ class ClientController:
         else:
             return []
 
+    def get_users_names_in_db(self):
+        request_data = {
+            "type" : "USERS_NAMES"
+        }
+        response = ClientController.send_request_to_server(request_data)
+        if response and response.get("status") == "success":
+            users_names = response.get("users_names", [])
+            return users_names
+        else:
+            return []
+
     def get_user_name_in_db(self, username, password):
         request_data = {
             "type": "LOGIN",
@@ -269,18 +364,25 @@ class ClientController:
                 "password": password
             }
         }
+        if not username:
+            QMessageBox.information(None, "Ошибка", "Введите имя пользователя и пароль.")
+
         response = ClientController.send_request_to_server(request_data)
+
         if response and response.get("status") == "success":
-            print('Login successful')
             role = response.get("role")
-            admin_name = response.get("name")
+            user_name = response.get("name")
+
             if role == 'admin':
                 self.login_pass_view.close()
-                self.open_template_constructor_window(admin_name)
+                self.open_template_constructor_window(user_name)
             else:
-                print('Access denied: User is not an admin')
-        else:
-            print('Invalid credentials')
+                self.login_pass_view.close()
+                self.open_report_window(user_name)
+        elif response and response.get("status") == "error" and response.get("message") == "Пользователь не найден.":
+            QMessageBox.information(None, "Ошибка", "Пользователь с таким именем не зарегистрирован.")
+        elif response and response.get("status") == "error" and response.get("message") == "Неверный пароль.":
+            QMessageBox.critical(None, "Ошибка", "Неверный пароль")
 
     def request_template_data_in_db(self, template_name):
         request_data = {

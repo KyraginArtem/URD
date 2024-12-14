@@ -1,3 +1,5 @@
+# server/models/report_db_model.py
+
 import pymssql
 
 class ReportDBModel:

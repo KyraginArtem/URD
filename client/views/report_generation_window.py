@@ -1,18 +1,20 @@
 import json
 import os
 
-from PySide6 import QtGui
-from PySide6.QtCore import QSize, QDate, Signal
-from PySide6.QtGui import QIcon, Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QLabel, QHBoxLayout, \
+from PySide6.QtCore import QDate, QSize, Signal, Qt
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QLabel, QHBoxLayout,
     QComboBox, QDateEdit
+)
 
 from client.services.template_table_service import TemplateTableService
 
 
 class ReportWindow(QWidget):
-    create_report = Signal()
-    def __init__(self, template_data, start_date, end_date, template_name, user_name, parent=None):
+    create_report = Signal(str, str, str)
+
+    def __init__(self, template_data, start_date, end_date, template_name , user_name, parent=None):
         super().__init__(parent)
         self.setWindowTitle(f"Отчеты")
         self.resize(1000, 700)
@@ -23,8 +25,6 @@ class ReportWindow(QWidget):
 
         # Данные шаблона
         self.template_data = template_data
-        # Десериализуем строку cell_data в список
-        # self.template_data["cell_data"] = json.loads(self.template_data["cell_data"])
 
         # Инициализируем интерфейс
         self.init_ui()
@@ -36,10 +36,7 @@ class ReportWindow(QWidget):
         self.table = QTableWidget(self.template_data["rows"], self.template_data["cols"])
         main_layout.addWidget(self.table)
 
-
-
         self.download_table()
-
 
     def create_top_panel(self):
         """
@@ -49,31 +46,41 @@ class ReportWindow(QWidget):
 
         # Выпадающее меню для выбора шаблона
         self.template_combo = QComboBox()
-        self.template_combo.addItems(self.template_name)
+
+        # Извлекаем только имена шаблонов из списка словарей
+        template_names = [template['name'] for template in self.template_name]
+
+        # Добавляем их в выпадающее меню
+        self.template_combo.addItems(template_names)
+
+        # Подключаем сигнал изменения текста
         self.template_combo.currentTextChanged.connect(self.name_on_template_selected)
-        # self.template_combo.currentTextChanged.connect(
-        #     lambda: self.template_selected.emit(self.template_combo.currentText())
-        # )
+
         layout.addWidget(self.template_combo)
-
         # Поля для выбора даты
-        self.start_date = QDateEdit()
-        self.start_date.setCalendarPopup(True)  # Показываем календарь
-        self.start_date.setDisplayFormat("dd.MM.yyyy")  # Формат отображения даты
-        self.start_date.setDate(QDate.currentDate().addDays(-7))  # Устанавливаем начальную дату по умолчанию
+        self.start_date_edit = QDateEdit()
+        self.start_date_edit.setCalendarPopup(True)
+        self.start_date_edit.setDisplayFormat("yyyy-MM-dd")
+        self.start_date_edit.setDate(QDate.currentDate().addDays(-7))  # Устанавливаем начальную дату по умолчанию
         layout.addWidget(QLabel("С даты:"))
-        layout.addWidget(self.start_date)
+        layout.addWidget(self.start_date_edit)
 
-        self.end_date = QDateEdit()
-        self.end_date.setCalendarPopup(True)
-        self.end_date.setDisplayFormat("dd.MM.yyyy")
-        self.end_date.setDate(QDate.currentDate())  # Устанавливаем текущую дату по умолчанию
+        self.end_date_edit = QDateEdit()
+        self.end_date_edit.setCalendarPopup(True)
+        self.end_date_edit.setDisplayFormat("yyyy-MM-dd")
+        self.end_date_edit.setDate(QDate.currentDate())  # Устанавливаем текущую дату по умолчанию
         layout.addWidget(QLabel("По дату:"))
-        layout.addWidget(self.end_date)
+        layout.addWidget(self.end_date_edit)
 
         # Кнопка для формирования отчета
         generate_report_button = QPushButton("Сформировать отчет")
-        generate_report_button.clicked.connect(self.create_report)  # Подключаем обработчик кнопки
+        generate_report_button.clicked.connect(
+            lambda: self.create_report.emit(
+                self.template_combo.currentText(),
+                self.start_date_edit.date().toString("yyyy-MM-dd"),
+                self.end_date_edit.date().toString("yyyy-MM-dd")
+            )
+        )
         layout.addWidget(generate_report_button)
 
         download_file = QPushButton()
@@ -166,8 +173,6 @@ class ReportWindow(QWidget):
                     # Перемещаем ячейку вниз
                     self.table.setItem(row + count, col, item)
 
-    # Выбор имени в комбо-боксе
     def name_on_template_selected(self, template_name):
         self.template_name = template_name
-        self.template_name.setText(f"Шаблон: {template_name}")
-
+        print(f"Шаблон выбран: {template_name}")

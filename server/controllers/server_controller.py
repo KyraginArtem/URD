@@ -51,6 +51,9 @@ class ServerController:
                     "UPDATE_TEMPLATE": self.handle_update_template,
                     "DELETE_TEMPLATE": self.handle_delete_template,
                     "PARSE_CELL": self.handle_parse_cell,
+                    "USERS_NAMES" : self.handle_get_users_names,
+                    "GET_ACCESSIBLE_TEMPLATE_NAMES": self.handle_accessible_template_names,
+                    "UPDATE_ACCESSIBLE_TEMPLATE_NAMES": self.handle_update_accessible_template_names,
                 }
 
                 handler = handlers.get(request_type)
@@ -75,15 +78,57 @@ class ServerController:
         """Обрабатывает запрос на вход в систему."""
         username = data.get("username")
         password = data.get("password")
-        if not username or not password:
-            response_data = {"status": "error", "message": "Missing credentials"}
+
+        # Получение данных пользователя из базы данных
+        user = self.template_db_model.get_user_by_credentials(username, password)
+
+        # Формирование ответа в зависимости от результата
+        if user["status"] == "success":
+            user_data = user["user"]  # Извлекаем данные пользователя
+            response_data = {
+                "status": "success",
+                "role": user_data["role"].strip(),  # Удаляем лишние пробелы из роли
+                "name": user_data["name"]
+            }
+        elif user["status"] == "error":
+            response_data = {"status": "error", "message": user["message"]}
         else:
-            user = self.template_db_model.get_user_by_credentials(username, password)
-            response_data = (
-                {"status": "success", "role": user["role"].strip(), "name": user["name"].strip()}
-                if user
-                else {"status": "error", "message": "Invalid credentials"}
-            )
+            response_data = {"status": "error", "message": "Произошла неизвестная ошибка."}
+
+        # Отправка ответа клиенту
+        self.send_response_to_client(client_socket, response_data)
+
+    def handle_get_users_names(self, client_socket, _):
+        users_name = self.template_db_model.get_users_names()
+        response_data = (
+            {"status": "success", "users_names": users_name}
+            if users_name
+            else {"status": "error", "message": "No templates found"}
+        )
+        self.send_response_to_client(client_socket, response_data)
+
+    def handle_accessible_template_names(self, client_socket, user_name):
+        templates_names = self.template_db_model.get_accessible_template_names(user_name)
+        response_data = (
+            {"status": "success", "users_names": templates_names}
+            if templates_names
+            else {"status": "error", "message": "No templates found"}
+        )
+        self.send_response_to_client(client_socket, response_data)
+
+    def handle_update_accessible_template_names(self, client_socket, change_data):
+        print("in server_controller")
+        print(change_data)
+        template_name = change_data["template_name"]
+        user_name = change_data["user_name"]
+        print(template_name, user_name)
+
+        result = self.template_db_model.update_accessible_template_names_in_db(user_name, template_name)
+        response_data = (
+            {"status": "success"}
+            if result
+            else {"status": "error", "message": "No templates found"}
+        )
         self.send_response_to_client(client_socket, response_data)
 
     def handle_get_template_names(self, client_socket, _):

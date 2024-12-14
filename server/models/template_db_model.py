@@ -14,10 +14,30 @@ class TemplateDBModel:
         )
 
     def get_user_by_credentials(self, username, password):
-        return self._execute_query(
+        # Проверка на существование пользователя
+        user = self._execute_query(
+            "SELECT * FROM Users WHERE name = %s",
+            (username,),
+            fetch_one=True
+        )
+        if not user:
+            return {"status": "error", "message": "Пользователь не найден."}
+
+        # Проверка пароля
+        user_with_password = self._execute_query(
             "SELECT * FROM Users WHERE name = %s AND password = %s",
             (username, password),
             fetch_one=True
+        )
+        if not user_with_password:
+            return {"status": "error", "message": "Неверный пароль."}
+
+        # Если пользователь и пароль верны
+        return {"status": "success", "user": user_with_password}
+
+    def get_users_names(self):
+        return  self._execute_query(
+            "SELECT * FROM Users WHERE role = user"
         )
 
     def get_template_names(self):
@@ -198,6 +218,72 @@ class TemplateDBModel:
             fetch_one=True
         )
         return result and result['count'] > 0
+
+    def get_users_names(self):
+        return  self._execute_query(
+            "SELECT Users.name FROM Users WHERE role = 'user'",
+           # "SELECT * FROM Users",
+            fetch_all=True
+        )
+
+    def get_accessible_template_names(self, user_name):
+        query = """
+            SELECT Templates.name 
+            FROM Templates
+            JOIN AvailableTemplates ON Templates.template_id = AvailableTemplates.template_id
+            JOIN Users ON AvailableTemplates.user_id = Users.user_id
+            WHERE Users.name = %s
+        """
+        return self._execute_query(
+            query=query,
+            params=(user_name,),
+            fetch_all=True
+        )
+
+    def update_accessible_template_names_in_db(self, user_name, template_names):
+        try:
+            # Получаем ID пользователя
+            user_id_query = "SELECT user_id FROM dbo.Users WHERE name = %s"
+            user_id = self._execute_query(query=user_id_query, params=(user_name,), fetch_one=True)
+            print(f"User ID = {user_id}")
+            if not user_id:
+                print(f"Пользователь {user_name} не найден")
+                return False
+
+            user_id = user_id['user_id']  # Распаковываем результат fetch_one()
+            print(f"User ID найден: {user_id}")
+
+            # Удаляем записи для данного пользователя
+            delete_query = "DELETE FROM dbo.AvailableTemplates WHERE user_id = %s"
+            self._execute_query(query=delete_query, params=(user_id,))
+            print(f"Удалены старые записи для user_id {user_id}")
+
+            # Получаем ID шаблонов, соответствующих именам
+            template_ids_query = "SELECT template_id FROM Templates WHERE name = %s"
+
+            for template_name in template_names:
+                template_id = self._execute_query(query=template_ids_query, params=(template_name,), fetch_one=True)
+                print(f"Template ID = {template_id}")
+                if template_id:
+                    template_id = template_id["template_id"]  # Распаковываем результат fetch_one()
+                    print(f"Template ID найден для {template_name}: {template_id}")
+
+                    # Добавляем новую запись в таблицу
+                    insert_query = """
+                        INSERT INTO AvailableTemplates (user_id, template_id)
+                        VALUES (%s, %s)
+                    """
+                    self._execute_query(query=insert_query, params=(user_id, template_id))
+                    print(f"Добавлена запись: user_id {user_id}, template_id {template_id}")
+                else:
+                    print(f"Template ID не найден для {template_name}")
+
+            print(f"Обновлены доступные шаблоны для пользователя {user_name}: {template_names}")
+            return True
+
+        except Exception as e:
+            print(f"Ошибка при обновлении шаблонов: {e}")
+            return False
 
     def _execute_query(self, query, params=None, fetch_one=False, fetch_all=False):
         try:

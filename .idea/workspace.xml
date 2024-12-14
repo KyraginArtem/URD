@@ -7,9 +7,13 @@
     <list default="true" id="dea0fc47-1b46-438a-8fef-6a87b28abd10" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/controllers/client_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/controllers/client_controller.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/services/template_table_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/services/template_table_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/views/access_settings_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/access_settings_window.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/views/report_generation_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/report_generation_window.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/views/template_constructor_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/template_constructor_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/controllers/server_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/controllers/server_controller.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/models/report_db_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/models/report_db_model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/models/template_db_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/models/template_db_model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/services/template_database_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/services/template_database_service.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,7 +49,8 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "Python.Xline_data_day.executor": "Run",
-    "Python.client_controller.executor": "Debug",
+    "Python.access_settings_window.executor": "Run",
+    "Python.client_controller.executor": "Run",
     "Python.db_connect.executor": "Run",
     "Python.db_model.executor": "Debug",
     "Python.download_data_DB_NN_Analytical_data_Lab_data.executor": "Run",
@@ -59,6 +64,7 @@
     "Python.template_constructor_view.executor": "Debug",
     "Python.template_constructor_window.executor": "Run",
     "Python.template_database_service.executor": "Run",
+    "Python.template_db_model.executor": "Debug",
     "Python.template_settings_window_view.executor": "Debug",
     "Python.template_table_service.executor": "Debug",
     "Python.test.executor": "Run",
@@ -126,22 +132,22 @@
         </line-breakpoint>
         <line-breakpoint type="python-line">
           <url>file://$PROJECT_DIR$/server/models/template_db_model.py</url>
-          <line>89</line>
+          <line>109</line>
           <option name="timeStamp" value="112" />
         </line-breakpoint>
         <line-breakpoint type="python-line">
           <url>file://$PROJECT_DIR$/server/models/template_db_model.py</url>
-          <line>123</line>
+          <line>143</line>
           <option name="timeStamp" value="113" />
         </line-breakpoint>
         <line-breakpoint type="python-line">
           <url>file://$PROJECT_DIR$/client/views/template_constructor_window.py</url>
-          <line>392</line>
+          <line>398</line>
           <option name="timeStamp" value="114" />
         </line-breakpoint>
         <line-breakpoint type="python-line">
           <url>file://$PROJECT_DIR$/server/models/template_db_model.py</url>
-          <line>220</line>
+          <line>306</line>
           <option name="timeStamp" value="119" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
@@ -151,58 +157,68 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/server/services/template_database_service.py</url>
-          <line>108</line>
+          <line>110</line>
           <option name="timeStamp" value="209" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/server/services/template_database_service.py</url>
-          <line>33</line>
+          <line>35</line>
           <option name="timeStamp" value="210" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/server/services/template_database_service.py</url>
-          <line>4</line>
+          <line>6</line>
           <option name="timeStamp" value="211" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/server/services/template_database_service.py</url>
-          <line>90</line>
+          <line>92</line>
           <option name="timeStamp" value="219" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/server/controllers/server_controller.py</url>
-          <line>201</line>
+          <line>246</line>
           <option name="timeStamp" value="225" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/server/controllers/server_controller.py</url>
-          <line>163</line>
+          <line>208</line>
           <option name="timeStamp" value="233" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/client/views/report_generation_window.py</url>
-          <line>152</line>
-          <option name="timeStamp" value="240" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/client/views/report_generation_window.py</url>
-          <line>97</line>
-          <option name="timeStamp" value="242" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/client/controllers/client_controller.py</url>
-          <line>120</line>
+          <line>196</line>
           <option name="timeStamp" value="243" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/client/controllers/client_controller.py</url>
-          <line>129</line>
+          <line>211</line>
           <option name="timeStamp" value="244" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/client/views/template_constructor_window.py</url>
-          <line>468</line>
+          <line>474</line>
           <option name="timeStamp" value="247" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/client/views/template_constructor_window.py</url>
+          <line>122</line>
+          <option name="timeStamp" value="249" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/server/models/template_db_model.py</url>
+          <line>17</line>
+          <option name="timeStamp" value="254" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/server/controllers/server_controller.py</url>
+          <line>82</line>
+          <option name="timeStamp" value="257" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/client/controllers/client_controller.py</url>
+          <line>116</line>
+          <option name="timeStamp" value="259" />
         </line-breakpoint>
       </breakpoints>
       <breakpoints-defaults>
