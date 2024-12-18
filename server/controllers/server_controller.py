@@ -14,7 +14,7 @@ class ServerController:
     def send_response_to_client(self, client_socket, response_data):
         """Отправляет сжатый ответ клиенту."""
         try:
-            json_data = json.dumps(response_data, ensure_ascii=False).encode("utf-8")
+            json_data = json.dumps(response_data, ensure_ascii=False).encode("UTF-8")
             compressed_data = zlib.compress(json_data)
             client_socket.sendall(compressed_data)
         except Exception as e:
@@ -24,7 +24,7 @@ class ServerController:
         """Получает сжатый запрос от клиента и распаковывает его."""
         try:
             compressed_request = client_socket.recv(8192)
-            request = json.loads(zlib.decompress(compressed_request).decode("utf-8"))
+            request = json.loads(zlib.decompress(compressed_request).decode("UTF-8"))
             return request
         except Exception as e:
             print(f"Ошибка получения данных от клиента: {e}")
@@ -210,7 +210,7 @@ class ServerController:
             # Используем сервис для обработки значения ячейки
             parsed_result = self.service_db.handle_parse(cell_expression, cell_data["start_time"],
                                                          cell_data["end_time"])
-
+            print(parsed_result)
             # Если результат — это словарь, извлекаем значение по ключу
             if isinstance(parsed_result, dict):
                 # Переходим к первому значению словаря

@@ -25,6 +25,7 @@ class ClientController:
         self.app.exec_()
         self.template_constructor_view = None
 
+
     @staticmethod
     def show_message_box(self, title, message, icon=QMessageBox.Information, button=QMessageBox.Ok):
         msg_box = QMessageBox()
@@ -41,11 +42,11 @@ class ClientController:
                 s.connect(('localhost', 5000))
                 json_request = json.dumps(request_data, ensure_ascii=False)
                 print(f"Отправляемый запрос: {json_request}")  # Логирование перед отправкой
-                compressed_data = zlib.compress(json.dumps(request_data, ensure_ascii=False).encode('utf-8'))
+                compressed_data = zlib.compress(json.dumps(request_data, ensure_ascii=False).encode('UTF-8'))
                 s.sendall(compressed_data)
 
                 compressed_response = s.recv(8192)  # Получаем сжатый ответ
-                response = zlib.decompress(compressed_response).decode('utf-8')
+                response = zlib.decompress(compressed_response).decode('UTF-8')
                 return json.loads(response)
         except ConnectionResetError as e:
             print(f"Connection error: {e}")
@@ -135,13 +136,79 @@ class ClientController:
         self.report_window.create_report.connect(self.handle_report_request)
         self.report_window.show()
 
+    #---------------------------------------------------------------------------------------------------
     def handle_report_request(self, template_name, start_date, end_date):
-        """
-        Обрабатывает запрос на создание отчета.
-        """
-        print(f"Создание отчета: шаблон={template_name}, с даты={start_date}, по дату={end_date}")
+        #Получаем данные выбранного шаблона
+        request_data = {
+            "type": "GET_TEMPLATE_DATA",
+            "data": template_name
+        }
 
-    #Создание окна Рапот
+        response = ClientController.send_request_to_server(request_data)
+        print("data")
+        print(response)
+            # Извлекаем данные из ответа
+        template_data = response
+        rows = template_data.get("row_count", 0)
+        cols = template_data.get("col_count", 0)
+        cells = template_data.get("cells", [])
+        background_color = template_data.get("background_color", "#FFFFFF")
+
+        # Подготовка данных для обработки
+        parse_data = {
+            "cell_value": {},
+            "start_time": start_date,
+            "end_time": end_date
+        }
+
+        # Ищем ячейки с формулами (начинаются с "=")
+        for cell in cells:
+            cell_value = cell.get("value", "")
+            if cell_value.startswith("="):
+                cell_name = cell["cell_name"]
+                parse_data["cell_value"][cell_name] = cell_value
+
+        # Если есть формулы, отправляем их на сервер для обработки
+        if parse_data["cell_value"]:
+            print("Данные для парсинга:", json.dumps(parse_data, indent=4, ensure_ascii=False))
+            parse_request = {
+                "type": "PARSE_CELL",
+                "data": parse_data
+            }
+            parse_response = ClientController.send_request_to_server(parse_request)
+
+            # Обновляем значения ячеек на основе ответа сервера
+            if parse_response and "cell_value" in parse_response:
+                parsed_values = parse_response["cell_value"]
+
+                for cell in cells:
+                    cell_name = cell["cell_name"]
+
+                    # Если ячейка есть в ответе от сервера
+                    if cell_name in parsed_values:
+                        updated_data = parsed_values[cell_name]
+
+                        # Обновляем только "type" и "value", сохраняя остальные данные
+                        cell["type"] = updated_data.get("type", "single")  # По умолчанию "single"
+                        cell["value"] = updated_data.get("value", "")
+                    else:
+                        # Ячейки, которые не были отправлены на парсинг, сохраняются без изменений
+                        cell.setdefault("type", "single")  # Если тип не указан, ставим "single"
+
+        # Формируем итоговые данные шаблона
+        final_template_data = {
+            "rows": rows,
+            "cols": cols,
+            "cell_data": cells,
+            "background_color": background_color
+        }
+
+        print(f"Итоговый файл с данными {final_template_data}")
+
+        # Вызываем сигнал data_processed и передаем данные в представление
+        self.report_window.data_processed.emit(final_template_data, start_date, end_date)
+
+    #Создание окна Рапот-------------------------------------------------------------------------------
     def handle_report_window(self):
         if not self.template_constructor_view.template_name:
             self.show_message_box("Ошибка", "Шаблон не выбран. Пожалуйста выберите шаблон.")
@@ -210,9 +277,7 @@ class ClientController:
 
         self.report_window = ReportWindow(processed_template_data, start_date_value, end_date_value, name, user_name)
         self.report_window.show()
-
-    # def create_report(self, template_name):
-    #     print(template_name)
+     #-----------------------------------------------------------------------------------
 
     def process_template_data(self, template_data):
         """

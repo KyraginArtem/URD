@@ -10,8 +10,20 @@ class ReportDBModel:
             server='localhost',
             database=self.db,
             as_dict=True,
-            charset='utf8'
+            charset='cp1251'
         )
+
+    def get_analytical_value_tonnage(self, data, time_start, time_end):
+        query = f"""
+            SELECT Q
+            FROM dbo.Lab_data
+            WHERE PROD_ID = {data['product']}
+              AND LEVEL_ID = {data['level']}
+              AND PROD_TIME BETWEEN '{time_start}' AND '{time_end}';
+        """
+        with self.connection.cursor() as cursor:
+            cursor.execute(query)
+            return cursor.fetchall()
 
     def get_analytical_value_element(self, data, time_start, time_end):
         query = f"""
@@ -31,7 +43,7 @@ class ReportDBModel:
                         FROM lab_data ld
                         WHERE 
                             ld.prod_id = {data["product"]} -- Фильтрация по продукту (например, 301)
-                            AND ld.level_id = {data["index"]} -- Фильтрация по уровню (например, 3)
+                            AND ld.level_id = {data["level"]} -- Фильтрация по уровню (например, 3)
                             AND ld.prod_time BETWEEN '{time_start}' AND '{time_end}' -- Фильтрация по времени
                     )
                     AND le.el_name = '{data["element"]}' -- Фильтрация по имени элемента (например, H2SO4)
@@ -59,7 +71,7 @@ class ReportDBModel:
                 ElementPositions ep -- Используем ранее определенные позиции элементов
             INNER JOIN 
                 lab_data ld ON ld.prod_id = {data["product"]} -- Фильтрация по продукту
-                AND ld.level_id = {data["index"]} -- Фильтрация по уровню
+                AND ld.level_id = {data["level"]} -- Фильтрация по уровню
                 AND ld.prod_time BETWEEN '{time_start}' AND '{time_end}'; -- Фильтрация по времени
         """
 
@@ -100,3 +112,76 @@ class ReportDBModel:
         with self.connection.cursor() as cursor:
             cursor.execute(query)
             return cursor.fetchall()
+
+    def get_name_product_analytical(self, prod_id):
+        query = f"""
+            SELECT PROD_NAME
+            FROM dbo.Lab_products
+            WHERE PROD_ID = %s
+        """
+        with self.connection.cursor() as cursor:
+            cursor.execute(query, (prod_id,))
+            result = cursor.fetchone()  # Используем fetchone для одного результата
+            if result is None:  # Проверяем, что результат отсутствует
+                return "Ошибка"
+            return result['PROD_NAME']
+
+    def get_name_product_technological(self, par_id):
+        query = f"""
+                    SELECT NAME
+                    FROM dbo.Tech_config
+                    WHERE PAR_ID = %s
+                """
+        with self.connection.cursor() as cursor:
+            cursor.execute(query, (par_id,))
+            result = cursor.fetchone()  # Используем fetchone для одного результата
+            if result is None:  # Проверяем, что результат отсутствует
+                return "Ошибка"
+            return result['NAME']
+
+    def get_name_product_Xline(self, par_id):
+        query = f"""
+                    SELECT NAME
+                    FROM dbo.Xline_config
+                    WHERE PAR_ID = %s
+                """
+        with self.connection.cursor() as cursor:
+            cursor.execute(query, (par_id,))
+            result = cursor.fetchone()  # Используем fetchone для одного результата
+            if result is None:  # Проверяем, что результат отсутствует
+                return "Ошибка"
+            return result['NAME']
+
+    def get_unit_product_technological(self, par_id):
+        query = f"""
+                    SELECT u.UNIT_NAME
+                    FROM dbo.Units u
+                    WHERE u.UNIT_ID = (
+                    SELECT xc.UNIT
+                    FROM dbo.Tech_config xc
+                    WHERE xc.PAR_ID = %s
+                    )
+                """
+        with self.connection.cursor() as cursor:
+            cursor.execute(query, (par_id,))
+            result = cursor.fetchone()  # Используем fetchone для одного результата
+            if result is None:  # Проверяем, что результат отсутствует
+                return "Ошибка"
+            return result['UNIT_NAME']
+
+    def get_unit_product_Xline(self, par_id):
+        query = f"""
+                    SELECT u.UNIT_NAME
+                    FROM dbo.Units u
+                    WHERE u.UNIT_ID = (
+                    SELECT xc.UNIT
+                    FROM dbo.Xline_config xc
+                    WHERE xc.PAR_ID = %s
+                    )
+                """
+        with self.connection.cursor() as cursor:
+            cursor.execute(query, (par_id,))
+            result = cursor.fetchone()  # Используем fetchone для одного результата
+            if result is None:  # Проверяем, что результат отсутствует
+                return "Ошибка"
+            return result['UNIT_NAME']

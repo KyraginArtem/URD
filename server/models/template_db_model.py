@@ -51,8 +51,11 @@ class TemplateDBModel:
         return template_names_list
 
     def get_template_info(self, template_name):
+        print(repr(template_name))
         template_info = self._execute_query(
-            "SELECT template_id, row_count, column_count, background_color FROM Templates WHERE name = %s",
+            "SELECT template_id, row_count, column_count, background_color "
+            "FROM Templates "
+            "WHERE name = %s",
             (template_name,),
             fetch_one=True
         )
@@ -159,7 +162,11 @@ class TemplateDBModel:
 
             # Удаляем все существующие данные ячеек и их конфигурации для данного шаблона
             cursor.execute(
-                "DELETE FROM TemplateCellConfigurations WHERE cell_id IN (SELECT cell_id FROM TemplateCells WHERE template_id = %s)",
+                "DELETE FROM TemplateCellConfigurations "
+                "WHERE cell_id IN "
+                    "(SELECT cell_id "
+                    "FROM TemplateCells "
+                    "WHERE template_id = %s)",
                 (template_id,))
             cursor.execute("DELETE FROM TemplateCells WHERE template_id = %s", (template_id,))
 

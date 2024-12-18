@@ -13,6 +13,7 @@ from client.services.template_table_service import TemplateTableService
 
 class ReportWindow(QWidget):
     create_report = Signal(str, str, str)
+    data_processed = Signal(dict, str, str)
 
     def __init__(self, template_data, start_date, end_date, template_name , user_name, parent=None):
         super().__init__(parent)
@@ -22,6 +23,7 @@ class ReportWindow(QWidget):
         self.end_date = end_date
         self.template_name = template_name
         self.user_name = user_name
+        self.data_processed.connect(self.update_data_report)
 
         # Данные шаблона
         self.template_data = template_data
@@ -101,14 +103,23 @@ class ReportWindow(QWidget):
         """
         Загружает данные в таблицу. Обрабатывает конфигурации и типы ячеек.
         """
+        # Очистка таблицы
+        self.table.clearContents()
+        self.table.setRowCount(0)
+        self.table.setColumnCount(0)
+
         # Устанавливаем фон таблицы
         self.table.setStyleSheet(f"background-color: {self.template_data['background_color']}")
+
+        # Устанавливаем размер таблицы
+        self.table.setRowCount(self.template_data["rows"])
+        self.table.setColumnCount(self.template_data["cols"])
 
         # Устанавливаем буквенные заголовки столбцов
         header_labels = [TemplateTableService.generate_col_name(i) for i in range(self.table.columnCount())]
         self.table.setHorizontalHeaderLabels(header_labels)
 
-        # Перебираем данные ячеек
+        # Заполняем таблицу данными
         for cell_info in self.template_data["cell_data"]:
             # Получаем позицию ячейки
             cell_name = cell_info["cell_name"]
@@ -120,38 +131,30 @@ class ReportWindow(QWidget):
                 # Если данные множественные, распределяем их по строкам
                 values = cell_info["value"]
                 if isinstance(values, dict) and len(values) == 1:
-                    # Извлекаем только список значений из словаря
                     key = next(iter(values))
                     values = values[key]
 
-                # Сдвигаем строки вниз, чтобы освободить место для данных
                 self.shift_rows_down(row_index + 1, len(values) - 1)
 
-                # Заполняем данные в соответствующие строки
                 for offset, value in enumerate(values):
                     target_row = row_index + offset
-
-                    # Создаем элемент таблицы для каждой строки
                     item = QTableWidgetItem(str(value))
                     self.table.setItem(target_row, col_index, item)
-
-                    # Применяем конфигурацию к каждой ячейке
                     TemplateTableService.apply_cell_configuration(item, self.table, target_row, col_index, cell_config)
 
             elif cell_info.get("type") == "single":
-                # Если данные одиночные, просто устанавливаем значение
                 cell_value = str(cell_info["value"]) if cell_info["value"] is not None else ""
                 item = QTableWidgetItem(cell_value)
                 self.table.setItem(row_index, col_index, item)
-
-                # Применяем конфигурацию
                 TemplateTableService.apply_cell_configuration(item, self.table, row_index, col_index, cell_config)
 
-        # Применяем объединение ячеек, если оно указано
+        # Применяем объединение ячеек
         for cell_info in self.template_data["cell_data"]:
             merge_range = cell_info["config"].get("merger")
             if merge_range:
                 TemplateTableService.apply_merged_cells(self.table, [merge_range])
+
+        self.table.viewport().update()
 
     def shift_rows_down(self, start_row, count):
         """
@@ -176,3 +179,14 @@ class ReportWindow(QWidget):
     def name_on_template_selected(self, template_name):
         self.template_name = template_name
         print(f"Шаблон выбран: {template_name}")
+
+    def update_data_report(self, new_template_data, new_start_date, new_end_date):
+        """
+        Обновляет данные отчета и перезагружает таблицу.
+        """
+        self.template_data = new_template_data
+        self.start_date = new_start_date
+        self.end_date = new_end_date
+
+        # Перезагружаем таблицу с новыми данными
+        self.download_table()
