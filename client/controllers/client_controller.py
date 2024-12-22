@@ -250,7 +250,7 @@ class ClientController:
             response = self.send_request_to_server(request_data)
 
             # Логируем ответ для проверки
-            print("Ответ сервера:", json.dumps(response, indent=4, ensure_ascii=False))
+            #print("Ответ сервера:", json.dumps(response, indent=4, ensure_ascii=False))
 
             # Объединяем данные
             for cell in cells:
@@ -281,7 +281,8 @@ class ClientController:
 
     def process_template_data(self, template_data):
         """
-        Обрабатывает template_data для корректного добавления строк с учетом сдвигов.
+        Обрабатывает template_data для корректного добавления строк с учетом сдвигов,
+        чтобы данные не терялись.
         """
         cell_data = template_data["cell_data"]
         updated_cell_data = []
@@ -300,10 +301,10 @@ class ClientController:
             if cell.get("type") == "list":
                 # Если это множественные данные, добавляем новые строки для значений
                 values = cell["value"]
+                shift = len(values) - 1  # Сколько строк нужно добавить
+
                 for offset, value in enumerate(values):
                     new_row_index = row_index + offset
-
-                    # Добавляем новую ячейку с данными
                     updated_cell_data.append({
                         "cell_name": TemplateTableService.generate_cell_name(new_row_index, col_index),
                         "config": cell["config"],
@@ -312,12 +313,11 @@ class ClientController:
                     })
 
                 # Обновляем карту сдвигов для строк ниже
-                shift = len(values) - 1
                 for i in range(row_index + 1, row_index + 1 + shift):
                     row_shifts[i] = row_shifts.get(i, 0) + shift
-
             else:
-                # Если это одиночная ячейка, просто обновляем ее позицию
+                # Если это одиночная ячейка, просто обновляем её позицию с учётом сдвига
+                row_index += row_shifts.get(row_index, 0)
                 updated_cell_data.append({
                     "cell_name": TemplateTableService.generate_cell_name(row_index, col_index),
                     "config": cell["config"],

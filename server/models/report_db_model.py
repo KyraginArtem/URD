@@ -123,7 +123,7 @@ class ReportDBModel:
             cursor.execute(query, (prod_id,))
             result = cursor.fetchone()  # Используем fetchone для одного результата
             if result is None:  # Проверяем, что результат отсутствует
-                return "Ошибка"
+                return "[ERROR: Ошибка в выражении]"
             return result['PROD_NAME']
 
     def get_name_product_technological(self, par_id):
@@ -136,7 +136,7 @@ class ReportDBModel:
             cursor.execute(query, (par_id,))
             result = cursor.fetchone()  # Используем fetchone для одного результата
             if result is None:  # Проверяем, что результат отсутствует
-                return "Ошибка"
+                return "[ERROR: Ошибка в выражении]"
             return result['NAME']
 
     def get_name_product_Xline(self, par_id):
@@ -149,7 +149,7 @@ class ReportDBModel:
             cursor.execute(query, (par_id,))
             result = cursor.fetchone()  # Используем fetchone для одного результата
             if result is None:  # Проверяем, что результат отсутствует
-                return "Ошибка"
+                return "[ERROR: Ошибка в выражении]"
             return result['NAME']
 
     def get_unit_product_technological(self, par_id):
@@ -166,7 +166,7 @@ class ReportDBModel:
             cursor.execute(query, (par_id,))
             result = cursor.fetchone()  # Используем fetchone для одного результата
             if result is None:  # Проверяем, что результат отсутствует
-                return "Ошибка"
+                return "[ERROR: Ошибка в выражении]"
             return result['UNIT_NAME']
 
     def get_unit_product_Xline(self, par_id):
@@ -183,5 +183,5 @@ class ReportDBModel:
             cursor.execute(query, (par_id,))
             result = cursor.fetchone()  # Используем fetchone для одного результата
             if result is None:  # Проверяем, что результат отсутствует
-                return "Ошибка"
+                return "[ERROR: Ошибка в выражении]"
             return result['UNIT_NAME']

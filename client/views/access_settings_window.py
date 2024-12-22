@@ -7,7 +7,7 @@ class AccessSettingsWindow(QMainWindow):
     def __init__(self, template_names, users_names, controller):
         super().__init__()
         self.setWindowTitle("Настройки доступа")
-        self.setFixedSize(800, 400)  # Увеличиваем размер окна
+        self.setFixedSize(400, 200)  # Увеличиваем размер окна
         self.controller = controller
 
         # Основной виджет
