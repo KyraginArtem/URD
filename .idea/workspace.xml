@@ -6,9 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="dea0fc47-1b46-438a-8fef-6a87b28abd10" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/controllers/client_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/controllers/client_controller.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/views/access_settings_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/views/access_settings_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/models/report_db_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/models/report_db_model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/services/abstract_table_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/services/table_cell_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/services/table_cell_parser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/services/template_table_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/services/template_table_service.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/services/template_database_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/services/template_database_service.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -123,7 +123,7 @@
       <breakpoints>
         <line-breakpoint type="python-line">
           <url>file://$PROJECT_DIR$/client/services/template_table_service.py</url>
-          <line>159</line>
+          <line>156</line>
           <option name="timeStamp" value="99" />
         </line-breakpoint>
         <line-breakpoint type="python-line">
@@ -148,7 +148,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/client/services/template_table_service.py</url>
-          <line>724</line>
+          <line>721</line>
           <option name="timeStamp" value="148" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
@@ -198,12 +198,12 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/server/services/template_database_service.py</url>
-          <line>74</line>
+          <line>71</line>
           <option name="timeStamp" value="334" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/server/services/template_database_service.py</url>
-          <line>45</line>
+          <line>42</line>
           <option name="timeStamp" value="342" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">

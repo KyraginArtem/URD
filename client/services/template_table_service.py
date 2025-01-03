@@ -3,13 +3,10 @@ import json
 
 from PySide6 import QtGui
 from PySide6.QtGui import Qt, QColor
-from PySide6.QtWidgets import QTableWidgetItem, QColorDialog, QFileDialog, QMessageBox
+from PySide6.QtWidgets import QTableWidgetItem, QFileDialog, QMessageBox
 from openpyxl.styles import Font, PatternFill, Alignment, Side, Border
 from openpyxl.utils import get_column_letter
 from openpyxl.workbook import Workbook
-
-
-# from client.services.abstract_table_service import AbstractTableService
 
 class TemplateTableService:
 

@@ -3,9 +3,6 @@
 import re
 from collections import defaultdict
 
-from shiboken6 import isValid
-from unicodedata import numeric
-
 from server.models.report_db_model import ReportDBModel
 
 class TemplateDatabaseService:

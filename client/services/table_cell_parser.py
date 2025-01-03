@@ -5,7 +5,6 @@ import operator
 
 from client.services.template_table_service import TemplateTableService
 
-
 class TableCellParser:
     OPERATORS = {
         '+': operator.add,
